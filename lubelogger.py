@@ -15,6 +15,7 @@ def to_lower_camel_case(snake_str):
 @dataclass
 class LubeloggerFillup:
     """Lubelogger fuel fillup object"""
+
     date: str
     odometer: int
     fuel_consumed: float
@@ -34,6 +35,7 @@ class LubeloggerFillup:
 
 class Lubelogger:
     """Lubelogger API client"""
+
     def __init__(self, url: str, username: str, password: str):
         self.url = url
         self.username = username
@@ -43,9 +45,7 @@ class Lubelogger:
 
     def get_fillups(self, vehicle_id: int) -> list[LubeloggerFillup]:
         """Get all fuel fillup logs from Lubelogger"""
-        params = {
-            'vehicleId': vehicle_id
-        }
+        params = {"vehicleId": vehicle_id}
         try:
             response = self.session.get(
                 f"{self.url}/api/vehicle/gasrecords",
@@ -64,23 +64,23 @@ class Lubelogger:
 
         fillups = []
         for fillup in response.json():
-            fillups.append(LubeloggerFillup(
-                fillup['date'],
-                int(fillup['odometer']),
-                fillup['fuelConsumed'],
-                fillup['cost'],
-                fillup['isFillToFull'] == "True",
-                fillup['missedFuelUp'] == "True",
-                fillup['notes'] if fillup['notes'] else ""
-            ))
+            fillups.append(
+                LubeloggerFillup(
+                    fillup["date"],
+                    int(fillup["odometer"]),
+                    fillup["fuelConsumed"],
+                    fillup["cost"],
+                    fillup["isFillToFull"] == "True",
+                    fillup["missedFuelUp"] == "True",
+                    fillup["notes"] if fillup["notes"] else "",
+                )
+            )
 
         return fillups
 
     def add_fillup(self, vehicle_id: int, fillup: LubeloggerFillup):
         """Add a fuel fillup log to Lubelogger"""
-        params = {
-            'vehicleId': vehicle_id
-        }
+        params = {"vehicleId": vehicle_id}
         try:
             response = self.session.post(
                 f"{self.url}/api/vehicle/gasrecords/add",

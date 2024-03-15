@@ -35,9 +35,7 @@ class GDrive:
         """
         auth_settings = {
             "client_config_backend": "service",
-            "service_config": {
-                "client_json_file_path": "service_secrets.json"
-            }
+            "service_config": {"client_json_file_path": "service_secrets.json"},
         }
         gauth = GoogleAuth(settings=auth_settings)
         gauth.ServiceAuth()
@@ -70,7 +68,13 @@ class GDrive:
     def find_file(self, folder_id: str, filename: str = "") -> list[GoogleDriveFile]:
         """Find files matching a name in a Google Drive folder"""
         query = {
-            'q': f"'{folder_id}' in parents and trashed=false" + 
-                 " and title='" + filename + "'" if filename else ''
+            "q": (
+                f"'{folder_id}' in parents and trashed=false"
+                + " and title='"
+                + filename
+                + "'"
+                if filename
+                else ""
+            )
         }
         return self.drive.ListFile(query).GetList()

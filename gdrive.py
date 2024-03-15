@@ -57,7 +57,7 @@ class GDrive:
             try:
                 gauth.LocalWebserverAuth()
             except AuthenticationError:
-                print("Authentication failed")
+                logger.error("Authentication failed")
                 sys.exit(1)
         elif gauth.access_token_expired:
             gauth.Refresh()

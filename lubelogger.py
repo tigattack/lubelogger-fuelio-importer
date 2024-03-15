@@ -1,5 +1,5 @@
-from dataclasses import asdict, dataclass
 import logging
+from dataclasses import asdict, dataclass
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -69,8 +69,8 @@ class Lubelogger:
                 int(fillup['odometer']),
                 fillup['fuelConsumed'],
                 fillup['cost'],
-                bool(fillup['isFillToFull']),
-                bool(fillup['missedFuelUp']),
+                fillup['isFillToFull'] == "True",
+                fillup['missedFuelUp'] == "True",
                 fillup['notes'] if fillup['notes'] else ""
             ))
 

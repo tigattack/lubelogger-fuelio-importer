@@ -108,7 +108,9 @@ def main(args):
     fuelio_fills = filter_fuelio_fillups(fuelio_data)
 
     logger.debug("Found %d fillups in Fuelio backup", len(list(fuelio_fills)))
-    assert len(list(fuelio_fills)) > 0, "No fillups found in Fuelio sync data"
+    if len(fuelio_fills) == 0:
+        logger.info("No fuel fillups found in Fuelio backup")
+        return
 
     lubelog_fills = lubelogger.get_fillups(config['lubelogger_vehicle_id'])
 

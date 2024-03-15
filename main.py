@@ -95,6 +95,7 @@ def main():
     vehicle_id = config['fuelio_vehicle_id']
     fuelio_csv_filename = "vehicle-" + str(vehicle_id) + "-sync.csv"
 
+    assert config['auth_type'] in gdrive.AuthType, "Invalid auth_type"
     drive = gdrive.GDrive(
         auth_type=gdrive.AuthType[str(config['auth_type']).upper()])
 

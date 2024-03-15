@@ -122,15 +122,23 @@ def main():
         if not any(ll_fill == new_ll_fill for ll_fill in lubelog_fills):
 
             # Check if fillup already exists for given date but with differing attributes
-            if any(fill_log.date == new_ll_fill.date for fill_log in lubelog_fills):
+            dupe_ll_fill = next(
+                (fill_log.to_dict()
+                for fill_log in lubelog_fills
+                if fill_log.date == new_ll_fill.date),
+                None
+            )
+            if dupe_ll_fill:
                 logger.warning("Found existing fillup on %s with diferent attributes."
                                % new_ll_fill.date)
                 logger.warning("This is likely a duplicate and the following" +
                                "attributes will need to be manually patched:")
-                # Print each key/value pair that does not match
+
+                # Log each key/value pair that does not match
                 for k, v in new_ll_fill.to_dict().items():
-                    if k in lubelog_fills[0].to_dict() and v != lubelog_fills[0].to_dict()[k]:
-                        logger.warning("%s: %s -> %s" % (k, v, lubelog_fills[0].to_dict()[k]))
+                    if k in dupe_ll_fill and v != dupe_ll_fill[k]:
+                        logger.warning("%s: %s -> %s", k, dupe_ll_fill[k], v)
+
                 # Skip this fillup
                 continue
 

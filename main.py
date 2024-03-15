@@ -1,5 +1,6 @@
 """Script to import Fuelio fillups into Lubelogger"""
 
+import argparse
 import csv
 import logging
 import tempfile
@@ -73,7 +74,7 @@ def lubelogger_converter(fillup) -> LubeloggerFillup:
     )
 
 
-def main():
+def main(args):
     logger = logging.getLogger(__name__)
     logsh = logging.StreamHandler()
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -114,22 +115,24 @@ def main():
     logger.debug("Found %d fillups in Lubelogger", len(lubelog_fills))
 
     # Loop through the fuelio fills list in reverse order (oldest first)
+    is_lubelogger_missing_logs = False
     for f_fill in fuelio_fills[::-1]:
         # Convert fuelio fillup to lubelogger schema
         new_ll_fill = lubelogger_converter(f_fill)
 
-        # Check if the converted fillup already 
+        # Check if the converted fillup already
         # exists in lubelogger and fully matches
         # the incoming Fuelio fillup. If so, skip.
         if not any(ll_fill == new_ll_fill for ll_fill in lubelog_fills):
+            is_lubelogger_missing_logs = True
 
             # Check if a fillup already exists for given date
             # and mileage but with other differing attributes
             dupe_ll_fill = next(
                 (fill_log.to_dict()
-                for fill_log in lubelog_fills
-                if fill_log.date == new_ll_fill.date
-                and fill_log.odometer == new_ll_fill.odometer),
+                 for fill_log in lubelog_fills
+                 if fill_log.date == new_ll_fill.date
+                 and fill_log.odometer == new_ll_fill.odometer),
                 None
             )
             if dupe_ll_fill:
@@ -150,9 +153,18 @@ def main():
                 continue
 
             # Add fillup
-            logger.info("Adding fuel fillup from %s", new_ll_fill.date)
-            lubelogger.add_fillup(config['lubelogger_vehicle_id'], new_ll_fill)
+            if not args.dry_run:
+                logger.info("Adding fuel fillup from %s", new_ll_fill.date)
+                lubelogger.add_fillup(config['lubelogger_vehicle_id'], new_ll_fill)
+            else:
+                logger.info("Dry run: Would add fuel fillup from %s", new_ll_fill.date)
 
+    if not is_lubelogger_missing_logs:
+        logger.info("Nothing to add, Lubelogger fuel logs are up to date!")
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(description="Import Fuelio fillups into Lubelogger")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Perform a dry run without making any changes")
+    args = parser.parse_args()
+    main(args)

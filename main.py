@@ -121,11 +121,13 @@ def main():
         # lubelogger and fully matches and, if so, skip.
         if not any(ll_fill == new_ll_fill for ll_fill in lubelog_fills):
 
-            # Check if fillup already exists for given date but with differing attributes
+            # Check if a fillup already exists for given date
+            # and mileage but with other differing attributes
             dupe_ll_fill = next(
                 (fill_log.to_dict()
                 for fill_log in lubelog_fills
-                if fill_log.date == new_ll_fill.date),
+                if fill_log.date == new_ll_fill.date
+                and fill_log.odometer == new_ll_fill.odometer),
                 None
             )
             if dupe_ll_fill:

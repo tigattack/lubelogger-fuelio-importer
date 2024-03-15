@@ -1,0 +1,16 @@
+---
+
+# One of 'service' or 'client'
+auth_type: service
+credentials_file: service_secrets.json
+
+fuelio_vehicle_id: 2
+lubelogger_vehicle_id: 1
+
+drive_folder_id: 1oegTkfBXlAbRe5Qk_ju7kAJuCFvNem4k
+
+lubelogger_url: https://lubelogger.domain.tld
+lubelogger_username: admin
+lubelogger_password: password
+
+log_level: info

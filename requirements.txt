@@ -1,0 +1,3 @@
+PyDrive2
+requests
+PyYAML

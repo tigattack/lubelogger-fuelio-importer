@@ -7,12 +7,12 @@ import zipfile
 from datetime import datetime
 from os import path
 from textwrap import dedent
-from typing import Generator
+
+import yaml
+from pydrive2.files import GoogleDriveFile
 
 import gdrive
-import yaml
 from lubelogger import Lubelogger, LubeloggerFillup
-from pydrive2.files import GoogleDriveFile
 
 
 def load_config() -> dict:
@@ -117,8 +117,9 @@ def main():
         # Convert fuelio fillup to lubelogger schema
         new_ll_fill = lubelogger_converter(f_fill)
 
-        # Check if the converted fillup already exists in
-        # lubelogger and fully matches and, if so, skip.
+        # Check if the converted fillup already 
+        # exists in lubelogger and fully matches
+        # the incoming Fuelio fillup. If so, skip.
         if not any(ll_fill == new_ll_fill for ll_fill in lubelog_fills):
 
             # Check if a fillup already exists for given date

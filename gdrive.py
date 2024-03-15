@@ -19,13 +19,12 @@ class AuthType(enum.Enum):
 
 class GDrive:
     def __init__(self, auth_type: AuthType) -> None:
+        assert auth_type in AuthType, "Invalid auth_type"
+
         if auth_type == AuthType.SERVICE:
             self.auth = self.drive_service_auth()
         elif auth_type == AuthType.CLIENT:
             self.auth = self.drive_client_auth()
-        else:
-            logger.error("Invalid auth_type")
-            sys.exit(1)
 
         self.drive = GoogleDrive(self.auth)
 

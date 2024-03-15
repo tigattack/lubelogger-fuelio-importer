@@ -74,27 +74,11 @@ def lubelogger_converter(fillup) -> LubeloggerFillup:
     )
 
 
-def main(args):
-    logger = logging.getLogger(__name__)
-    logsh = logging.StreamHandler()
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    logsh.setFormatter(formatter)
-    logger.addHandler(logsh)
-
-    config = load_config()
-
-    if config.get('debug') or str(config.get('log_level')).lower() == 'debug':
-        logger.setLevel(logging.DEBUG)
-
-    lubelogger = Lubelogger(
-        config['lubelogger_url'],
-        config['lubelogger_username'],
-        config['lubelogger_password']
-    )
-
+def fetch_backup_data(config: dict) -> list[dict]:
+    """Fetches Fuelio backup data"""
     folder_id = config['drive_folder_id']
     vehicle_id = config['fuelio_vehicle_id']
-    fuelio_csv_filename = "vehicle-" + str(vehicle_id) + "-sync.csv"
+    fuelio_csv_filename = f"vehicle-{vehicle_id}-sync.csv"
 
     assert config['auth_type'] in gdrive.AuthType, "Invalid auth_type"
     drive = gdrive.GDrive(
@@ -107,14 +91,18 @@ def main(args):
     fuelio_data = fuelio_csv_from_backup(backup, fuelio_csv_filename)
     fuelio_fills = filter_fuelio_fillups(fuelio_data)
 
-    logger.debug("Found %d fillups in Fuelio backup", len(list(fuelio_fills)))
-    if len(fuelio_fills) == 0:
-        logger.info("No fuel fillups found in Fuelio backup")
-        return
+    return fuelio_fills
 
-    lubelog_fills = lubelogger.get_fillups(config['lubelogger_vehicle_id'])
 
-    logger.debug("Found %d fillups in Lubelogger", len(lubelog_fills))
+def process_fillups(
+        fuelio_fills: list[dict],
+        lubelogger: Lubelogger,
+        lubelog_fills: list[LubeloggerFillup],
+        config: dict,
+        dry_run: bool
+    ):
+    """Processes fillups"""
+    logger = logging.getLogger(__name__)
 
     # Loop through the fuelio fills list in reverse order (oldest first)
     is_lubelogger_missing_logs = False
@@ -138,7 +126,7 @@ def main(args):
                 None
             )
             if dupe_ll_fill:
-                logger.warning("Found existing fillup on %s with diferent attributes.",
+                logger.warning("Found existing fillup on %s with different attributes.",
                                new_ll_fill.date)
                 logger.warning("This is likely a duplicate and the following" +
                                "attributes will need to be manually patched:")
@@ -155,7 +143,7 @@ def main(args):
                 continue
 
             # Add fillup
-            if not args.dry_run:
+            if not dry_run:
                 logger.info("Adding fuel fillup from %s", new_ll_fill.date)
                 lubelogger.add_fillup(config['lubelogger_vehicle_id'], new_ll_fill)
             else:
@@ -163,6 +151,38 @@ def main(args):
 
     if not is_lubelogger_missing_logs:
         logger.info("Nothing to add, Lubelogger fuel logs are up to date!")
+
+def main(args):
+    logger = logging.getLogger(__name__)
+    logsh = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    logsh.setFormatter(formatter)
+    logger.addHandler(logsh)
+
+    config = load_config()
+
+    if config.get('debug') or str(config.get('log_level')).lower() == 'debug':
+        logger.setLevel(logging.DEBUG)
+
+    lubelogger = Lubelogger(
+        config['lubelogger_url'],
+        config['lubelogger_username'],
+        config['lubelogger_password']
+    )
+
+    fuelio_fills = fetch_backup_data(config)
+
+    logger.debug("Found %d fillups in Fuelio backup", len(list(fuelio_fills)))
+    if len(fuelio_fills) == 0:
+        logger.info("No fuel fillups found in Fuelio backup")
+        return
+
+    lubelog_fills = lubelogger.get_fillups(config['lubelogger_vehicle_id'])
+
+    logger.debug("Found %d fillups in Lubelogger", len(lubelog_fills))
+
+    process_fillups(fuelio_fills, lubelogger, lubelog_fills, config, args.dry_run)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Import Fuelio fillups into Lubelogger")

@@ -131,10 +131,13 @@ def main():
                 None
             )
             if dupe_ll_fill:
-                logger.warning("Found existing fillup on %s with diferent attributes."
-                               % new_ll_fill.date)
+                logger.warning("Found existing fillup on %s with diferent attributes.",
+                               new_ll_fill.date)
                 logger.warning("This is likely a duplicate and the following" +
                                "attributes will need to be manually patched:")
+
+                logger.debug("Existing fill: %s", dupe_ll_fill)
+                logger.debug("Incoming fill: %s", new_ll_fill.to_dict())
 
                 # Log each key/value pair that does not match
                 for k, v in new_ll_fill.to_dict().items():

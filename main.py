@@ -94,6 +94,17 @@ def fetch_backup_data(config: dict) -> list[dict]:
     return fuelio_fills
 
 
+def find_duplicate_fillups(new_fill: LubeloggerFillup, lubelog_fills: list[LubeloggerFillup]):
+    """Finds duplicate fillups"""
+    return next(
+        (fill_log.to_dict()
+         for fill_log in lubelog_fills
+         if fill_log.date == new_fill.date
+         and fill_log.odometer == new_fill.odometer),
+        None
+    )
+
+
 def process_fillups(
         fuelio_fills: list[dict],
         lubelogger: Lubelogger,
@@ -118,13 +129,7 @@ def process_fillups(
 
             # Check if a fillup already exists for given date
             # and mileage but with other differing attributes
-            dupe_ll_fill = next(
-                (fill_log.to_dict()
-                 for fill_log in lubelog_fills
-                 if fill_log.date == new_ll_fill.date
-                 and fill_log.odometer == new_ll_fill.odometer),
-                None
-            )
+            dupe_ll_fill = find_duplicate_fillups(new_ll_fill, lubelog_fills)
             if dupe_ll_fill:
                 logger.warning("Found existing fillup on %s with different attributes.",
                                new_ll_fill.date)

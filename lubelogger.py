@@ -7,12 +7,10 @@ from requests.auth import HTTPBasicAuth
 logger = logging.getLogger(__name__)
 
 
-def to_lower_camel_case(snake_str):
-    camel_string = "".join(x.capitalize() for x in snake_str.lower().split("_"))
-    return snake_str[0].lower() + camel_string[1:]
 
 
-@dataclass
+
+@dataclass(frozen=True)
 class LubeloggerFillup:
     """Lubelogger fuel fillup object"""
 
@@ -24,14 +22,21 @@ class LubeloggerFillup:
     missed_fuel_up: bool
     notes: str = ""
 
-    def to_dict(self) -> dict:
+    @property
+    def as_dict(self) -> dict:
         """Return fillup as dict"""
-        return dict(asdict(self).items())
+        return asdict(self)
 
-    def to_lubelogger_api_format(self) -> dict:
-        """Return fillup as dict for use in Lubelogger API"""
-        return {to_lower_camel_case(k): v for k, v in asdict(self).items()}
+    def __eq__(self, __value: object) -> bool:
+        if type(__value) != LubeloggerFillup:
+            raise ValueError(f"'==' not supported between instances of {type(self)} and {type(__value)}")
+        return __value.date == self.date and self.odometer == self.odometer
 
+    def __iter__(self):
+        return iter(self.as_dict.items())
+
+    def __getitem__(self, key):
+        return self.as_dict[key]
 
 class Lubelogger:
     """Lubelogger API client"""
@@ -43,6 +48,15 @@ class Lubelogger:
         self.session = requests.Session()
         self.session.auth = HTTPBasicAuth(self.username, self.password)
 
+    @staticmethod
+    def _to_lower_camel_case(snake_str):
+        camel_string = "".join(x.capitalize() for x in snake_str.lower().split("_"))
+        return snake_str[0].lower() + camel_string[1:]
+
+    def _to_api_format(self, lube_logger_fillup: LubeloggerFillup) -> dict:
+        """Return fillup as dict for use in Lubelogger API"""
+        return {self._to_lower_camel_case(k): v for k, v in lube_logger_fillup}
+
     def _create_fillup(self, fillup) -> LubeloggerFillup:
         return LubeloggerFillup(
             fillup["date"],
@@ -51,7 +65,7 @@ class Lubelogger:
             fillup["cost"],
             fillup["isFillToFull"] == "True",
             fillup["missedFuelUp"] == "True",
-            fillup["notes"] if fillup["notes"] else "",
+            fillup["notes"] if fillup["notes"] else ""
         )
 
     def get_fillups(self, vehicle_id: int) -> list[LubeloggerFillup]:
@@ -75,7 +89,7 @@ class Lubelogger:
 
         fillups = []
         for fillup in response.json():
-            fillups.append(self._create_fillup(fillup))
+            fillups.append(self._create_fillup(fillup=fillup))
 
         return fillups
 
@@ -85,12 +99,12 @@ class Lubelogger:
         try:
             response = self.session.post(
                 f"{self.url}/api/vehicle/gasrecords/add",
-                fillup.to_lubelogger_api_format(),
+                self._to_api_format(fillup),
                 params=params,
                 timeout=10,
             )
         except requests.exceptions.ReadTimeout:
-            logger.error("Lubelogger API timed out")
+            logger.error(msg="Lubelogger API timed out")
 
         try:
             response.raise_for_status()

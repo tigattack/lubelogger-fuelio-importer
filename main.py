@@ -15,6 +15,7 @@ from pydrive2.files import GoogleDriveFile
 import gdrive
 from lubelogger import Lubelogger, LubeloggerFillup
 
+logger = logging.getLogger(__name__)
 
 def load_config() -> dict:
     """Loads config from YAML file"""
@@ -96,18 +97,30 @@ def fetch_backup_data(config: dict) -> list[dict]:
     return fuelio_fills
 
 
-def find_duplicate_fillups(
+def has_fillup(
     new_fill: LubeloggerFillup, lubelog_fills: list[LubeloggerFillup]
-):
+) -> bool:
     """Finds duplicate fillups"""
-    return next(
-        (
-            fill_log.to_dict()
-            for fill_log in lubelog_fills
-            if fill_log.date == new_fill.date and fill_log.odometer == new_fill.odometer
-        ),
-        None,
-    )
+    for fill in lubelog_fills:
+        if new_fill == fill:
+            logger.warning(
+                "Found existing fillup on %s with different attributes.",
+                new_fill.date,
+            )
+            logger.warning(
+                "This is likely a duplicate and the following"
+                + "attributes will need to be manually patched:"
+            )
+
+            logger.debug("Existing fill: %s", fill)
+            logger.debug("Incoming fill: %s", new_fill.as_dict)
+
+            # Log each key/value pair that does not match
+            for k, v in new_fill:
+                if v != fill[k]:
+                    logger.warning("%s: %s -> %s", k, fill[k], v)
+            return True
+    return False
 
 
 def process_fillups(
@@ -118,7 +131,7 @@ def process_fillups(
     dry_run: bool,
 ):
     """Processes fillups"""
-    logger = logging.getLogger(__name__)
+
 
     # Loop through the fuelio fills list in reverse order (oldest first)
     is_lubelogger_missing_logs = False
@@ -126,40 +139,13 @@ def process_fillups(
         # Convert fuelio fillup to lubelogger schema
         new_ll_fill = lubelogger_converter(f_fill)
 
-        # Check if the converted fillup already
-        # exists in lubelogger and fully matches
-        # the incoming Fuelio fillup. If so, skip.
-        if not any(ll_fill == new_ll_fill for ll_fill in lubelog_fills):
+        if not has_fillup(new_ll_fill, lubelog_fills):
             is_lubelogger_missing_logs = True
-
-            # Check if a fillup already exists for given date
-            # and mileage but with other differing attributes
-            dupe_ll_fill = find_duplicate_fillups(new_ll_fill, lubelog_fills)
-            if dupe_ll_fill:
-                logger.warning(
-                    "Found existing fillup on %s with different attributes.",
-                    new_ll_fill.date,
-                )
-                logger.warning(
-                    "This is likely a duplicate and the following"
-                    + "attributes will need to be manually patched:"
-                )
-
-                logger.debug("Existing fill: %s", dupe_ll_fill)
-                logger.debug("Incoming fill: %s", new_ll_fill.to_dict())
-
-                # Log each key/value pair that does not match
-                for k, v in new_ll_fill.to_dict().items():
-                    if k in dupe_ll_fill and v != dupe_ll_fill[k]:
-                        logger.warning("%s: %s -> %s", k, dupe_ll_fill[k], v)
-
-                # Skip this fillup
-                continue
-
-            # Add fillup
+            
             if not dry_run:
                 logger.info("Adding fuel fillup from %s", new_ll_fill.date)
                 lubelogger.add_fillup(config["lubelogger_vehicle_id"], new_ll_fill)
+                lubelog_fills.append(new_ll_fill)
             else:
                 logger.info("Dry run: Would add fuel fillup from %s", new_ll_fill.date)
 

@@ -95,6 +95,8 @@ class Lubelogger:
 
     def add_fillup(self, vehicle_id: int, fillup: LubeloggerFillup):
         """Add a fuel fillup log to Lubelogger"""
+        
+        logger.info("Adding fuel fillup from %s", fillup.date)
         params = {"vehicleId": vehicle_id}
         try:
             response = self.session.post(

@@ -141,9 +141,8 @@ def process_fillups(
 
         if not has_fillup(new_ll_fill, lubelog_fills):
             is_lubelogger_missing_logs = True
-            
+
             if not dry_run:
-                logger.info("Adding fuel fillup from %s", new_ll_fill.date)
                 lubelogger.add_fillup(config["lubelogger_vehicle_id"], new_ll_fill)
                 lubelog_fills.append(new_ll_fill)
             else:

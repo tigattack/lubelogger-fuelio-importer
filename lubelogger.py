@@ -32,6 +32,9 @@ class LubeloggerFillup:
             raise ValueError(f"'==' not supported between instances of {type(self)} and {type(__value)}")
         return __value.date == self.date and self.odometer == self.odometer
 
+    def __hash__(self):
+        return hash((self.date, self.odometer))
+
     def __iter__(self):
         return iter(self.as_dict.items())
 
@@ -68,7 +71,7 @@ class Lubelogger:
             fillup["notes"] if fillup["notes"] else ""
         )
 
-    def get_fillups(self, vehicle_id: int) -> list[LubeloggerFillup]:
+    def get_fillups(self, vehicle_id: int) -> set[LubeloggerFillup]:
         """Get all fuel fillup logs from Lubelogger"""
         params = {"vehicleId": vehicle_id}
         try:
@@ -79,23 +82,23 @@ class Lubelogger:
             )
         except requests.exceptions.ReadTimeout:
             logger.error("Lubelogger API timed out")
-            return []
+            return set()
 
         try:
             response.raise_for_status()
         except requests.exceptions.HTTPError as exc:
             logger.error(exc)
-            return []
+            return set()
 
-        fillups = []
+        fillups = set()
         for fillup in response.json():
-            fillups.append(self._create_fillup(fillup=fillup))
+            fillups.add(self._create_fillup(fillup=fillup))
 
         return fillups
 
     def add_fillup(self, vehicle_id: int, fillup: LubeloggerFillup):
         """Add a fuel fillup log to Lubelogger"""
-        
+
         logger.info("Adding fuel fillup from %s", fillup.date)
         params = {"vehicleId": vehicle_id}
         try:

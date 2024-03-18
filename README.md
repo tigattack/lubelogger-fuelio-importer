@@ -65,9 +65,13 @@ If you're unsure, download and extract the backup ZIP of each vehicle and inspec
 3. Enter an appropriate name.
 4. Continue through steps 2 & 3.
 5. Select the service account in the list.
-6. Select the "Keys" tab and create a new key:
+6. Copy the service account's email address. We'll use this later.
+7. Select the "Keys" tab and create a new key:
     1. Click "Add key"
     2. Select "Create new key"
     3. Select "JSON"
     4. Click "Create"
-7. The service account key will be downloaded. Rename the file to "service_secrets.json"  and place it in your working directory.
+8. The service account key will be downloaded. Rename the file to "service_secrets.json"  and place it in your working directory.
+9. Open Google Drive in a browser.
+10. Navigate to the folder in which Fulio stores its backups.
+11. Share the folder with the service account using email address you copied in step 6. The "Viewer" role is all it needs.

@@ -43,6 +43,17 @@ class Lubelogger:
         self.session = requests.Session()
         self.session.auth = HTTPBasicAuth(self.username, self.password)
 
+    def _create_fillup(self, fillup) -> LubeloggerFillup:
+        return LubeloggerFillup(
+            fillup["date"],
+            int(fillup["odometer"]),
+            fillup["fuelConsumed"],
+            fillup["cost"],
+            fillup["isFillToFull"] == "True",
+            fillup["missedFuelUp"] == "True",
+            fillup["notes"] if fillup["notes"] else "",
+        )
+
     def get_fillups(self, vehicle_id: int) -> list[LubeloggerFillup]:
         """Get all fuel fillup logs from Lubelogger"""
         params = {"vehicleId": vehicle_id}
@@ -64,17 +75,7 @@ class Lubelogger:
 
         fillups = []
         for fillup in response.json():
-            fillups.append(
-                LubeloggerFillup(
-                    fillup["date"],
-                    int(fillup["odometer"]),
-                    fillup["fuelConsumed"],
-                    fillup["cost"],
-                    fillup["isFillToFull"] == "True",
-                    fillup["missedFuelUp"] == "True",
-                    fillup["notes"] if fillup["notes"] else "",
-                )
-            )
+            fillups.append(self._create_fillup(fillup))
 
         return fillups
 

@@ -77,14 +77,12 @@ def lubelogger_converter(fillup) -> LubeloggerFillup:
     )
 
 
-def fetch_backup_data(config: dict) -> list[dict]:
-    """Fetches Fuelio backup data"""
-    folder_id = config["drive_folder_id"]
-    vehicle_id = config["fuelio_vehicle_id"]
+def fetch_fuelio_data(folder_id: str, vehicle_id: str, auth_type: str) -> list[dict]:
+    """Fetches Fuelio backup data for given vehicle ID"""
     fuelio_csv_filename = f"vehicle-{vehicle_id}-sync.csv"
 
-    assert config["auth_type"] in gdrive.AuthType, "Invalid auth_type"
-    drive = gdrive.GDrive(auth_type=gdrive.AuthType[str(config["auth_type"]).upper()])
+    assert auth_type in gdrive.AuthType, "Invalid auth_type"
+    drive = gdrive.GDrive(auth_type=gdrive.AuthType[str(auth_type).upper()])
 
     backup = drive.find_file(folder_id, fuelio_csv_filename + ".zip")[0]
 
@@ -114,7 +112,7 @@ def process_fillups(
     fuelio_fills: list[dict],
     lubelogger: Lubelogger,
     lubelog_fills: list[LubeloggerFillup],
-    config: dict,
+    lubelogger_vehicle_id: str,
     dry_run: bool,
 ):
     """Processes fillups"""
@@ -159,7 +157,7 @@ def process_fillups(
             # Add fillup
             if not dry_run:
                 logger.info("Adding fuel fillup from %s", new_ll_fill.date)
-                lubelogger.add_fillup(config["lubelogger_vehicle_id"], new_ll_fill)
+                lubelogger.add_fillup(lubelogger_vehicle_id, new_ll_fill)
             else:
                 logger.info("Dry run: Would add fuel fillup from %s", new_ll_fill.date)
 
@@ -185,7 +183,10 @@ def main(args):
         config["lubelogger_password"],
     )
 
-    fuelio_fills = fetch_backup_data(config)
+    fuelio_fills = fetch_fuelio_data(
+        folder_id=config["drive_folder_id"],
+        vehicle_id=config["fuelio_vehicle_id"],
+        auth_type=config["auth_type"])
 
     logger.debug("Found %d fillups in Fuelio backup", len(list(fuelio_fills)))
     if len(fuelio_fills) == 0:
@@ -196,7 +197,7 @@ def main(args):
 
     logger.debug("Found %d fillups in Lubelogger", len(lubelog_fills))
 
-    process_fillups(fuelio_fills, lubelogger, lubelog_fills, config, args.dry_run)
+    process_fillups(fuelio_fills, lubelogger, lubelog_fills, config["lubelogger_vehicle_id"], args.dry_run)
 
 
 if __name__ == "__main__":

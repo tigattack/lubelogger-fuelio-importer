@@ -4,8 +4,16 @@ Python script to import fuel fill-ups from Fuelio's Google Drive backups to [Lub
 
 # Usage
 
+Standalone:
+
 ```sh
 python3 main.py [--dry-run]
+```
+
+Docker:
+
+```sh
+docker run --rm -v config.yml:/app/config.yml ghcr.io/tigattack/lubelogger-fuelio-importer:latest [--dry-run]
 ```
 
 # Getting Started

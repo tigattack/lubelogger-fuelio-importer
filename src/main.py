@@ -142,7 +142,7 @@ def process_fillups(
                 )
                 logger.warning(
                     "This is likely a duplicate and the following"
-                    + "attributes will need to be manually patched:"
+                    + " attributes will need to be manually patched:"
                 )
 
                 logger.debug("Existing fill: %s", dupe_ll_fill)

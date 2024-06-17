@@ -190,8 +190,8 @@ def main(args):
 
     config = load_config()
 
-    if config.get("debug") or str(config.get("log_level")).lower() == "debug":
-        logger.setLevel(logging.DEBUG)
+    log_level_name = args.log_level if len(args.log_level) > 0 else config.get("log_level", "INFO")
+    logger.setLevel(logging.getLevelName(log_level_name.upper()))
 
     lubelogger = Lubelogger(
         config["lubelogger_url"],
@@ -224,6 +224,12 @@ if __name__ == "__main__":
         "--dry-run",
         action="store_true",
         help="Perform a dry run without making any changes",
+    )
+    parser.add_argument(
+        "--log-level",
+        default="",
+        choices=["debug", "info", "warning", "error", "critical"],
+        help="Log level to use",
     )
     args = parser.parse_args()
     main(args)

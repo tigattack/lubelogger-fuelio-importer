@@ -1,6 +1,6 @@
 # lubelogger-fuelio-importer
 
-Python script to import fuel fill-ups from Fuelio's Google Drive backups to [Lubelogger](https://github.com/hargata/lubelog).
+Python script to import fuel fill-ups from [Fuelio](https://fuel.io/)'s Google Drive backups to [Lubelogger](https://github.com/hargata/lubelog).
 
 # Usage
 

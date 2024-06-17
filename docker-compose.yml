@@ -1,0 +1,9 @@
+---
+
+services:
+  lubelogger-fuelio-importer:
+    image: ghcr.io/tigattack/lubelogger-fuelio-importer:latest
+    # Optional flags, e.g. enable dry run mode
+    # command: --dry-run
+    volumes:
+      - ./config:/app/config

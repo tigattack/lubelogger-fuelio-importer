@@ -1,0 +1,11 @@
+---
+
+services:
+  lubelogger-fuelio-importer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: --dry-run
+    volumes:
+      - ./src:/app/config
+      # - ./config:/app/config

@@ -165,7 +165,7 @@ def process_fillups(
                 for k, v in new_ll_fill.to_dict().items():
                     if k in dupe_ll_fill and v != dupe_ll_fill[k]:
                         logger.warning('The current value of attribute "%s":\n%s', k, dupe_ll_fill[k])
-                        logger.warning('The incoming value of attribute "%s":\n', v)
+                        logger.warning('The incoming value of attribute "%s":\n%s', k, v)
 
                 # Skip this fillup
                 continue

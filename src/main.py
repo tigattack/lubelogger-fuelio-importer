@@ -199,21 +199,43 @@ def main(args):
         config["lubelogger_password"],
     )
 
-    fuelio_fills = fetch_fuelio_data(
-        folder_id=config["drive_folder_id"],
-        vehicle_id=config["fuelio_vehicle_id"],
-        auth_type=config["auth_type"])
+    for vehicle in config["sync_vehicles"]:
+        logger.info(
+            "RUNNING FOR LUBELOGGER VEHICLE ID %d, FUELIO VEHICLE ID %d",
+            vehicle["fuelio_id"],
+            vehicle["lubelogger_id"])
 
-    logger.debug("Found %d fillups in Fuelio backup", len(list(fuelio_fills)))
-    if len(fuelio_fills) == 0:
-        logger.info("No fuel fillups found in Fuelio backup")
-        return
+        logger.debug("Fetching Lubelogger vehicle data")
+        lubelog_vehicle_info = lubelogger.get_vehicle_info(vehicle["lubelogger_id"])
 
-    lubelog_fills = lubelogger.get_fillups(config["lubelogger_vehicle_id"])
+        lubelog_vehicle_title = ' '.join([
+                        str(lubelog_vehicle_info["year"]),
+                        lubelog_vehicle_info["make"],
+                        lubelog_vehicle_info["model"],
+                        f"({lubelog_vehicle_info["licensePlate"]})"
+                    ])
 
-    logger.debug("Found %d fillups in Lubelogger", len(lubelog_fills))
+        logger.info("Found Lubelogger vehicle: %s", lubelog_vehicle_title)
 
-    process_fillups(fuelio_fills, lubelogger, lubelog_fills, config["lubelogger_vehicle_id"], args.dry_run)
+        logger.debug("Fetching Fuelio backup data")
+        fuelio_fills = fetch_fuelio_data(
+            folder_id=config["drive_folder_id"],
+            vehicle_id=vehicle["fuelio_id"],
+            auth_type=config["auth_type"])
+
+        if len(fuelio_fills) == 0:
+            logger.error("No fuel fillups found in Fuelio backup!")
+            return
+
+        logger.debug("Fetching Lubelogger fillups")
+        lubelog_fills = lubelogger.get_fillups(vehicle["lubelogger_id"])
+
+        logger.info(
+            "Found %d fillups in Fuelio backup and %d in Lubelogger",
+            len(list(fuelio_fills)),
+            len(lubelog_fills))
+
+        process_fillups(fuelio_fills, lubelogger, lubelog_fills, vehicle["lubelogger_id"], args.dry_run)
 
 
 if __name__ == "__main__":

@@ -149,12 +149,9 @@ def process_fillups(
             dupe_ll_fill = find_duplicate_fillups(new_ll_fill, lubelog_fills)
             if dupe_ll_fill:
                 logger.warning(
-                    "Found existing fillup on %s with different attributes.",
+                    "Found existing fillup on %s with different attributes. " +
+                    "This is likely a duplicate and the relevant attributes will need to be manually patched.",
                     new_ll_fill.date,
-                )
-                logger.warning(
-                    "This is likely a duplicate and the following"
-                    + " attributes will need to be manually patched:"
                 )
 
                 if logger.level >= logging.DEBUG:
@@ -166,7 +163,8 @@ def process_fillups(
                 # Log each key/value pair that does not match
                 for k, v in new_ll_fill.to_dict().items():
                     if k in dupe_ll_fill and v != dupe_ll_fill[k]:
-                        logger.warning("%s: %s -> %s", k, dupe_ll_fill[k], v)
+                        logger.warning('The current value of attribute "%s":\n%s', k, dupe_ll_fill[k])
+                        logger.warning('The incoming value of attribute "%s":\n', v)
 
                 # Skip this fillup
                 continue

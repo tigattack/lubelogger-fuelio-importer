@@ -2,8 +2,11 @@
 
 # One of 'service' or 'client'
 auth_type: service
+
+# The name of your credentials JSON file
 credentials_file: service_secrets.json
 
+# This list can contain multiple vehicle ID pairs.
 sync_vehicles:
   - fuelio_id: 1
     lubelogger_id: 1

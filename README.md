@@ -7,28 +7,37 @@ Python script to import fuel fill-ups from Fuelio's Google Drive backups to [Lub
 Standalone:
 
 ```sh
-python3 main.py [--dry-run]
+python3 main.py [-h|--help] [--dry-run] [--log-level {debug,info,warning,error,critical}] [config_dir]
 ```
 
 Docker:
 
 ```sh
-docker run --rm -v config.yml:/app/config.yml ghcr.io/tigattack/lubelogger-fuelio-importer:latest [--dry-run]
+docker run --rm -v ./config:/app/config ghcr.io/tigattack/lubelogger-fuelio-importer:latest [--dry-run]
 ```
+
+> [!TIP]
+> The log level set in the execution args (`--log-level`) takes presedence over config.yml's `log_level`. If neither are set, it will default to `INFO`.
+
+> [!TIP]
+> If `config_dir` is unspecified, the default is to look for a directory named `config` in the script's current working direcory.
 
 # Getting Started
 
 First, a couple of prerequisites:
 
 * Fuelio must be configured to back up to Google Drive ([docs](https://www.fuel.io/faq_backup_help.html)).
-* You must generate service or client credentials for the Google Drive API. Client credentials require interactive (browser) authentication, while service accounts do not. Pick the most appropriate option for your case.
+* You must generate service or client credentials for the Google Drive API. Client credentials require interactive (browser) authentication, while service accounts do not. Pick the most appropriate option for your case and follow the instructions in the relevant sections below.
 
-The basic process is as follows, and you can review each section below as needed:
+Now you can complete the configuration for the importer:
 
 1. Copy `config.example.yml` to `config.yml`, and open it in an editor.
-2. Discover & set your vehicle ID for Fuelio & Lubelogger.
+2. Define your vehicle('s) IDs in Fuelio & Lubelogger.
 3. Set your Lubelogger domain, username, and password.
-4. Create your Google authentication credentials JSON, move the file in place, and set the relevant `auth_type`.
+4. Set your Google Drive folder ID (see instructions below).
+5. Create your Google authentication credentials JSON (see instructions below) and move the file in place
+6. Set your credentials filename and the relevant `auth_type` in the config.
+7. Run the importer per the [Usage](#usage) section above.
 
 ## Retrieve your Fuelio vehicle ID
 

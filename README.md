@@ -23,7 +23,7 @@ docker run --rm -v ./config:/app/config ghcr.io/tigattack/lubelogger-fuelio-impo
 
 ### Docker Compose
 
-Download [docker-compose.yml]() to current directory before running.
+Download [docker-compose.yml](docker-compose.yml) to current directory before running.
 
 ```sh
 docker compose up [-d]

@@ -3,17 +3,31 @@
 import argparse
 import csv
 import logging
+import sys
 import tempfile
 import zipfile
 from datetime import datetime
 from os import path
+from pprint import pformat
 from textwrap import dedent
+from typing import Any
 
 import yaml
 from pydrive2.files import GoogleDriveFile
+from pygments import highlight
+from pygments.formatters import Terminal256Formatter
+from pygments.lexers import PythonLexer
 
 import gdrive
 from lubelogger import Lubelogger, LubeloggerFillup
+
+
+def pprint_colour(obj: Any) -> None:
+    """Pretty-print, in colour if possible"""
+    if sys.stdout.isatty():
+        print(highlight(pformat(obj), PythonLexer(), Terminal256Formatter()), end="")
+    else:
+        print(pformat(obj))
 
 
 def load_config() -> dict:
@@ -143,8 +157,11 @@ def process_fillups(
                     + " attributes will need to be manually patched:"
                 )
 
-                logger.debug("Existing fill: %s", dupe_ll_fill)
-                logger.debug("Incoming fill: %s", new_ll_fill.to_dict())
+                if logger.level >= logging.DEBUG:
+                    logger.debug("Existing fill:")
+                    pprint_colour(dupe_ll_fill)
+                    logger.debug("Incoming fill:")
+                    pprint_colour(new_ll_fill.to_dict())
 
                 # Log each key/value pair that does not match
                 for k, v in new_ll_fill.to_dict().items():

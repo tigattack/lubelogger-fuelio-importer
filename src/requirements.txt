@@ -1,3 +1,4 @@
 PyDrive2
+pygments
 PyYAML
 requests

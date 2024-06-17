@@ -154,7 +154,8 @@ def process_fillups(
                     new_ll_fill.date,
                 )
 
-                if logger.level >= logging.DEBUG:
+                # Print full existing & incoming fill objects if log level is DEBUG (10) or lower
+                if logger.level <= logging.DEBUG:
                     logger.debug("Existing fill:")
                     pprint_colour(dupe_ll_fill)
                     logger.debug("Incoming fill:")

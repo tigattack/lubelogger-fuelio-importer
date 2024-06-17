@@ -4,6 +4,11 @@ Python script to import fuel fill-ups from Fuelio's Google Drive backups to [Lub
 
 # Usage
 
+**Defaults:**
+
+* The log level set in the execution args (`--log-level`) takes presedence over config.yml's `log_level`. If neither are set, it will default to `INFO`.
+* If `config_dir` is unspecified, the default is to look for a directory named `config` in the script's current working direcory.
+
 ### Standalone
 
 ```sh
@@ -23,12 +28,6 @@ Download [docker-compose.yml]() to current directory before running.
 ```sh
 docker compose up [-d]
 ```
-
-> [!TIP]
-> The log level set in the execution args (`--log-level`) takes presedence over config.yml's `log_level`. If neither are set, it will default to `INFO`.
-
-> [!TIP]
-> If `config_dir` is unspecified, the default is to look for a directory named `config` in the script's current working direcory.
 
 # Getting Started
 

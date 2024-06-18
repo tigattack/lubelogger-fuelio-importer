@@ -67,6 +67,29 @@ def filter_fuelio_fillups(fuelio_data: csv.DictReader) -> list[dict]:
 
 def lubelogger_converter(fillup) -> LubeloggerFillup:
     """Converts a Fuelio fillup to Lubelogger fillup"""
+    fuelio_fuel_types = {
+        "-1": "Unknown",
+        0: "Unset",
+        110: "Petrol Regular",
+        112: "Petrol Super",
+        113: "Petrol Ultimate",
+        114: "Petrol Racing",
+        119: "Petrol E10",
+        201: "Diesel Regular",
+        202: "Diesel Plus",
+        209: "Biodiesel B20",
+        211: "Biodiesel",
+        217: "Diesel Adblue",
+        218: "Biodiesel B10",
+        219: "Biodiesel B30",
+        305: "E85",
+        401: "LPG",
+        501: "CNG",
+        502: "CBG",
+        503: "Biogas",
+        601: "240V",
+        602: "DC 500 Fast Charge",
+    }
     fillup_datetime = datetime.strptime(fillup["## Vehicle"], "%Y-%m-%d %H:%M")
     fillup_notes = dedent(
         f"""
@@ -74,7 +97,9 @@ def lubelogger_converter(fillup) -> LubeloggerFillup:
 
             Location: [{fillup[None][5]},{fillup[None][6]}](https://www.google.com/maps/place/{fillup[None][5]},{fillup[None][6]})
 
-            Time: {fillup_datetime.strftime('%H:%M')}"""
+            Time: {fillup_datetime.strftime('%H:%M')}
+
+            Fuel type: {fuelio_fuel_types.get(int(fillup[None][11]), fuelio_fuel_types['-1'])}"""
     ).strip()
 
     if fillup[None][8]:

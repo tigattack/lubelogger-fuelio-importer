@@ -268,7 +268,8 @@ if __name__ == "__main__":
         "config_dir",
         type=str,
         help="Config directory",
-        default=os.environ.get('CONFIG_DIR', './config')
+        default=os.environ.get('CONFIG_DIR', './config'),
+        nargs='?',
     )
     parser.add_argument(
         "--dry-run",

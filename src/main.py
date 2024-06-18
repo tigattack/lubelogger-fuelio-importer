@@ -93,13 +93,10 @@ def lubelogger_converter(fillup) -> LubeloggerFillup:
     fillup_datetime = datetime.strptime(fillup["## Vehicle"], "%Y-%m-%d %H:%M")
     fillup_notes = dedent(
         f"""
-            Fuel station: {fillup[None][7].strip()}
-
-            Location: [{fillup[None][5]},{fillup[None][6]}](https://www.google.com/maps/place/{fillup[None][5]},{fillup[None][6]})
-
-            Time: {fillup_datetime.strftime('%H:%M')}
-
-            Fuel type: {fuelio_fuel_types.get(int(fillup[None][11]), fuelio_fuel_types['-1'])}"""
+            * Fuel station: {fillup[None][7].strip()}
+            * Location: [{fillup[None][5]},{fillup[None][6]}](https://www.google.com/maps/place/{fillup[None][5]},{fillup[None][6]})
+            * Time: {fillup_datetime.strftime('%H:%M')}
+            * Fuel type: {fuelio_fuel_types.get(int(fillup[None][11]), fuelio_fuel_types['-1'])}"""
     ).strip()
 
     if fillup[None][8]:

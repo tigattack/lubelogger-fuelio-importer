@@ -30,11 +30,22 @@ def pprint_colour(obj: Any) -> None:
         print(pformat(obj))
 
 
-def load_config(directory: str) -> dict:
+def load_config(conf_dir: str) -> dict:
     """Loads config from YAML file"""
-    config_path = os.path.join(directory, "config.yml")
-    with open(config_path, "r", encoding="utf-8") as config_file:
-        return yaml.safe_load(config_file)
+    logger = logging.getLogger(__name__)
+
+    config_path = os.path.join(conf_dir, "config.yml")
+
+    if os.path.exists(config_path):
+        with open(config_path, "r", encoding="utf-8") as config_file:
+            return yaml.safe_load(config_file)
+
+    logger.error(
+        'config.yml could not be found in %s. ' +
+        'Specify a different config directory using CLI arguments or the CONFIG_DIR environment variable.',
+        conf_dir
+    )
+    return {}
 
 
 def fuelio_csv_from_backup(backup: GoogleDriveFile, filename: str) -> csv.DictReader:
@@ -211,6 +222,10 @@ def main(args):
     logger.addHandler(logsh)
 
     config = load_config(args.config_dir)
+
+    if not config:
+        logger.error('No config items found.')
+        sys.exit(1)
 
     log_level_name = args.log_level if len(args.log_level) > 0 else config.get("log_level", "INFO")
     logger.setLevel(logging.getLevelName(log_level_name.upper()))

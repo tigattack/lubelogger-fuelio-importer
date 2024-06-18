@@ -7,7 +7,8 @@ Python script to import fuel fill-ups from [Fuelio](https://fuel.io/)'s Google D
 **Defaults:**
 
 * The log level set in the execution args (`--log-level`) takes presedence over config.yml's `log_level`. If neither are set, it will default to `INFO`.
-* If `config_dir` is unspecified, the default is to look for a directory named `config` in the script's current working direcory.
+* If `config_dir` is unspecified, the default is to look for a directory named `config` in the script's current working direcory.  
+  It can also be set by defining the `CONFIG_DIR` environment variable.
 
 ### Standalone
 

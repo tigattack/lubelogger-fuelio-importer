@@ -2,6 +2,8 @@ FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1
 
+ENV CONFIG_DIR=/app/config
+
 WORKDIR /app
 
 COPY src/requirements.txt .

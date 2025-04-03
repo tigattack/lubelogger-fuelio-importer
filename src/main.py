@@ -114,10 +114,10 @@ def lubelogger_converter(fillup) -> LubeloggerFillup:
         fillup_notes += f"\n\n###### Fuelio notes:\n\n{fillup[None][8]}"
 
     return LubeloggerFillup(
-        date            = fillup_datetime.strftime('%d/%m/%Y'),
+        date            = fillup_datetime.strftime('%Y-%m-%d'),
         odometer        = int(float(fillup[None][0])),
-        fuel_consumed   = fillup[None][1],
-        cost            = fillup[None][3],
+        fuel_consumed   = float(fillup[None][1]),
+        cost            = float(fillup[None][3]),
         is_fill_to_full = int(fillup[None][2]) == 1,
         missed_fuel_up  = int(fillup[None][9]) == 1,
         notes           = fillup_notes
@@ -197,8 +197,8 @@ def process_fillups(
                 # Log each key/value pair that does not match
                 for k, v in new_ll_fill.to_dict().items():
                     if k in dupe_ll_fill and v != dupe_ll_fill[k]:
-                        logger.warning('The current value of attribute "%s":\n%s', k, dupe_ll_fill[k])
-                        logger.warning('The incoming value of attribute "%s":\n%s', k, v)
+                        logger.warning('The current value of attribute "%s":\n%s', k, repr(dupe_ll_fill[k]))
+                        logger.warning('The incoming value of attribute "%s":\n%s', k, repr(v))
 
                 # Skip this fillup
                 continue

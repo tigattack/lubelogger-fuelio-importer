@@ -49,19 +49,21 @@ class Lubelogger:
             int(fillup["odometer"]),
             fillup["fuelConsumed"],
             fillup["cost"],
-            fillup["isFillToFull"] == "True",
-            fillup["missedFuelUp"] == "True",
+            fillup["isFillToFull"],
+            fillup["missedFuelUp"],
             fillup["notes"] if fillup["notes"] else "",
         )
 
     def get_fillups(self, vehicle_id: int) -> list[LubeloggerFillup]:
         """Get all fuel fillup logs from Lubelogger"""
         params = {"vehicleId": vehicle_id}
+        headers = {'culture-invariant': "true"}
         try:
             response = self.session.get(
                 f"{self.url}/api/vehicle/gasrecords",
                 params=params,
                 timeout=10,
+                headers=headers,
             )
         except requests.exceptions.ReadTimeout:
             logger.error("Lubelogger API timed out")
@@ -82,12 +84,14 @@ class Lubelogger:
     def add_fillup(self, vehicle_id: int, fillup: LubeloggerFillup):
         """Add a fuel fillup log to Lubelogger"""
         params = {"vehicleId": vehicle_id}
+        headers = {'culture-invariant': "true"}
         try:
             response = self.session.post(
                 f"{self.url}/api/vehicle/gasrecords/add",
                 fillup.to_lubelogger_api_format(),
                 params=params,
                 timeout=10,
+                headers=headers,
             )
         except requests.exceptions.ReadTimeout:
             logger.error("Lubelogger API timed out")
@@ -101,10 +105,12 @@ class Lubelogger:
 
     def get_vehicle_info(self, vehicle_id: int) -> dict:
         """Get vehicle info from Lubelogger"""
+        headers = {'culture-invariant': "true"}
         try:
             response = self.session.get(
                 f"{self.url}/api/vehicles",
                 timeout=10,
+                headers=headers,
             )
         except requests.exceptions.ReadTimeout:
             logger.error("Lubelogger API timed out")

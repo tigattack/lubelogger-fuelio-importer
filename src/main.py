@@ -252,7 +252,7 @@ def main(args):
     log_level_name = (
         args.log_level if len(args.log_level) > 0 else config.get("log_level", "INFO")
     )
-    logger.setLevel(logging.getLevelName(log_level_name.upper()))
+    logger.setLevel(getattr(logging, log_level_name.upper()))
 
     lubelogger = Lubelogger(
         config["lubelogger_url"],

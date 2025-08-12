@@ -1,5 +1,8 @@
 ---
 
+# The path to your credentials JSON file
+credentials_file_path: service_secrets.json
+
 # This list can contain multiple vehicle ID pairs.
 sync_vehicles:
   - fuelio_id: 1

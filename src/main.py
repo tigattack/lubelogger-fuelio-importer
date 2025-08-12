@@ -13,7 +13,6 @@ from textwrap import dedent
 from typing import Any
 
 import yaml
-from pydrive2.files import GoogleDriveFile
 from pygments import highlight
 from pygments.formatters import Terminal256Formatter
 from pygments.lexers import PythonLexer
@@ -48,18 +47,31 @@ def load_config(conf_dir: str) -> dict:
     return {}
 
 
-def fuelio_csv_from_backup(backup: GoogleDriveFile, filename: str) -> csv.DictReader:
+def fuelio_csv_from_backup(backup: dict, filename: str, drive: gdrive.GDrive) -> csv.DictReader:
     """Returns Fuelio data from Google Drive backup"""
     with tempfile.TemporaryDirectory() as tempdir:
-        backup_path = os.path.join(tempdir, "fuelio.zip")
-        extract_path = os.path.join(tempdir, "fuelio")
+        # Download the ZIP file from Google Drive
+        zip_content = drive.download_file(backup['id'], backup['name'])
+        if not zip_content:
+            raise RuntimeError(f"Failed to download backup file: {backup['name']}")
 
-        backup.GetContentFile(backup_path, mimetype="application/zip")
-        with zipfile.ZipFile(backup_path, "r") as zip_ref:
-            zip_ref.extractall(extract_path)
+        # Extract the ZIP file
+        extract_path = os.path.join(tempdir, "fuelio")
+        os.makedirs(extract_path, exist_ok=True)
+
+        try:
+            with zipfile.ZipFile(zip_content, "r") as zip_ref:
+                zip_ref.extractall(extract_path)
+        except zipfile.BadZipFile:
+            raise RuntimeError(f"Invalid ZIP file: {backup['name']}")
+
+        # Read the CSV file
+        csv_path = os.path.join(extract_path, filename)
+        if not os.path.exists(csv_path):
+            raise FileNotFoundError(f"CSV file not found in backup: {filename}")
 
         return csv.DictReader(
-            open(os.path.join(extract_path, filename), "r", encoding="utf-8")
+            open(csv_path, "r", encoding="utf-8")
         )
 
 
@@ -68,7 +80,7 @@ def filter_fuelio_fillups(fuelio_data: csv.DictReader) -> list[dict]:
     fillups = []
     for fillup in fuelio_data:
         try:
-            datetime.strptime(fillup.get("## Vehicle"), "%Y-%m-%d %H:%M")
+            datetime.strptime(fillup["## Vehicle"], "%Y-%m-%d %H:%M")
             fillups.append(fillup)
         except ValueError:
             pass
@@ -124,17 +136,20 @@ def lubelogger_converter(fillup) -> LubeloggerFillup:
     )
 
 
-def fetch_fuelio_data(folder_id: str, vehicle_id: str) -> list[dict]:
+def fetch_fuelio_data(folder_id: str, vehicle_id: int, credentials_file: str) -> list[dict[str, Any]]:
     """Fetches Fuelio backup data for given vehicle ID"""
     fuelio_csv_filename = f"vehicle-{vehicle_id}-sync.csv"
 
-    drive = gdrive.GDrive()
+    drive = gdrive.GDrive(credentials_file)
 
-    backup = drive.find_file(folder_id, fuelio_csv_filename + ".zip")[0]
+    backups = drive.find_file(folder_id, fuelio_csv_filename + ".zip")
 
-    assert len(backup) > 0, f"No backup found for {vehicle_id}"
+    if not backups:
+        raise AssertionError(f"No backup found for vehicle {vehicle_id}")
 
-    fuelio_data = fuelio_csv_from_backup(backup, fuelio_csv_filename)
+    backup = backups[0]
+
+    fuelio_data = fuelio_csv_from_backup(backup, fuelio_csv_filename, drive)
     fuelio_fills = filter_fuelio_fillups(fuelio_data)
 
     return fuelio_fills
@@ -257,6 +272,7 @@ def main(args):
         fuelio_fills = fetch_fuelio_data(
             folder_id=config["drive_folder_id"],
             vehicle_id=vehicle["fuelio_id"],
+            credentials_file=config["credentials_file_path"]
         )
 
         if len(fuelio_fills) == 0:

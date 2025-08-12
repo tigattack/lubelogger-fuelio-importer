@@ -1,4 +1,5 @@
-PyDrive2
+google-api-python-client
+google-auth-oauthlib
 pygments
 PyYAML
 requests

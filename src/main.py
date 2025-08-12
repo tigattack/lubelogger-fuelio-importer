@@ -124,12 +124,11 @@ def lubelogger_converter(fillup) -> LubeloggerFillup:
     )
 
 
-def fetch_fuelio_data(folder_id: str, vehicle_id: str, auth_type: str) -> list[dict]:
+def fetch_fuelio_data(folder_id: str, vehicle_id: str) -> list[dict]:
     """Fetches Fuelio backup data for given vehicle ID"""
     fuelio_csv_filename = f"vehicle-{vehicle_id}-sync.csv"
 
-    assert auth_type in gdrive.AuthType, "Invalid auth_type"
-    drive = gdrive.GDrive(auth_type=gdrive.AuthType[str(auth_type).upper()])
+    drive = gdrive.GDrive()
 
     backup = drive.find_file(folder_id, fuelio_csv_filename + ".zip")[0]
 
@@ -258,7 +257,7 @@ def main(args):
         fuelio_fills = fetch_fuelio_data(
             folder_id=config["drive_folder_id"],
             vehicle_id=vehicle["fuelio_id"],
-            auth_type=config["auth_type"])
+        )
 
         if len(fuelio_fills) == 0:
             logger.error("No fuel fillups found in Fuelio backup!")

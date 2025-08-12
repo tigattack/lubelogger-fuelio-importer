@@ -40,18 +40,20 @@ def load_config(conf_dir: str) -> dict:
             return yaml.safe_load(config_file)
 
     logger.error(
-        'config.yml could not be found in %s. ' +
-        'Specify a different config directory using CLI arguments or the CONFIG_DIR environment variable.',
-        conf_dir
+        "config.yml could not be found in %s. "
+        + "Specify a different config directory using CLI arguments or the CONFIG_DIR environment variable.",
+        conf_dir,
     )
     return {}
 
 
-def fuelio_csv_from_backup(backup: dict, filename: str, drive: gdrive.GDrive) -> csv.DictReader:
+def fuelio_csv_from_backup(
+    backup: dict, filename: str, drive: gdrive.GDrive
+) -> csv.DictReader:
     """Returns Fuelio data from Google Drive backup"""
     with tempfile.TemporaryDirectory() as tempdir:
         # Download the ZIP file from Google Drive
-        zip_content = drive.download_file(backup['id'], backup['name'])
+        zip_content = drive.download_file(backup["id"], backup["name"])
         if not zip_content:
             raise RuntimeError(f"Failed to download backup file: {backup['name']}")
 
@@ -70,9 +72,7 @@ def fuelio_csv_from_backup(backup: dict, filename: str, drive: gdrive.GDrive) ->
         if not os.path.exists(csv_path):
             raise FileNotFoundError(f"CSV file not found in backup: {filename}")
 
-        return csv.DictReader(
-            open(csv_path, "r", encoding="utf-8")
-        )
+        return csv.DictReader(open(csv_path, "r", encoding="utf-8"))
 
 
 def filter_fuelio_fillups(fuelio_data: csv.DictReader) -> list[dict]:
@@ -118,25 +118,27 @@ def lubelogger_converter(fillup) -> LubeloggerFillup:
         f"""
             * Fuel station: {fillup[None][7].strip()}
             * Location: [{fillup[None][5]},{fillup[None][6]}](https://www.google.com/maps/place/{fillup[None][5]},{fillup[None][6]})
-            * Time: {fillup_datetime.strftime('%H:%M')}
-            * Fuel type: {fuelio_fuel_types.get(int(fillup[None][11]), fuelio_fuel_types['-1'])}"""
+            * Time: {fillup_datetime.strftime("%H:%M")}
+            * Fuel type: {fuelio_fuel_types.get(int(fillup[None][11]), fuelio_fuel_types["-1"])}"""
     ).strip()
 
     if fillup[None][8]:
         fillup_notes += f"\n\n###### Fuelio notes:\n\n{fillup[None][8]}"
 
     return LubeloggerFillup(
-        date            = fillup_datetime.strftime('%Y-%m-%d'),
-        odometer        = int(float(fillup[None][0])),
-        fuel_consumed   = float(fillup[None][1]),
-        cost            = float(fillup[None][3]),
-        is_fill_to_full = int(fillup[None][2]) == 1,
-        missed_fuel_up  = int(fillup[None][9]) == 1,
-        notes           = fillup_notes
+        date=fillup_datetime.strftime("%Y-%m-%d"),
+        odometer=int(float(fillup[None][0])),
+        fuel_consumed=float(fillup[None][1]),
+        cost=float(fillup[None][3]),
+        is_fill_to_full=int(fillup[None][2]) == 1,
+        missed_fuel_up=int(fillup[None][9]) == 1,
+        notes=fillup_notes,
     )
 
 
-def fetch_fuelio_data(folder_id: str, vehicle_id: int, credentials_file: str) -> list[dict[str, Any]]:
+def fetch_fuelio_data(
+    folder_id: str, vehicle_id: int, credentials_file: str
+) -> list[dict[str, Any]]:
     """Fetches Fuelio backup data for given vehicle ID"""
     fuelio_csv_filename = f"vehicle-{vehicle_id}-sync.csv"
 
@@ -196,8 +198,8 @@ def process_fillups(
             dupe_ll_fill = find_duplicate_fillups(new_ll_fill, lubelog_fills)
             if dupe_ll_fill:
                 logger.warning(
-                    "Found existing fillup on %s with different attributes. " +
-                    "This is likely a duplicate and the relevant attributes will need to be manually patched.",
+                    "Found existing fillup on %s with different attributes. "
+                    + "This is likely a duplicate and the relevant attributes will need to be manually patched.",
                     new_ll_fill.date,
                 )
 
@@ -211,8 +213,14 @@ def process_fillups(
                 # Log each key/value pair that does not match
                 for k, v in new_ll_fill.to_dict().items():
                     if k in dupe_ll_fill and v != dupe_ll_fill[k]:
-                        logger.warning('The current value of attribute "%s":\n%s', k, repr(dupe_ll_fill[k]))
-                        logger.warning('The incoming value of attribute "%s":\n%s', k, repr(v))
+                        logger.warning(
+                            'The current value of attribute "%s":\n%s',
+                            k,
+                            repr(dupe_ll_fill[k]),
+                        )
+                        logger.warning(
+                            'The incoming value of attribute "%s":\n%s', k, repr(v)
+                        )
 
                 # Skip this fillup
                 continue
@@ -238,10 +246,12 @@ def main(args):
     config = load_config(args.config_dir)
 
     if not config:
-        logger.error('No config items found.')
+        logger.error("No config items found.")
         sys.exit(1)
 
-    log_level_name = args.log_level if len(args.log_level) > 0 else config.get("log_level", "INFO")
+    log_level_name = (
+        args.log_level if len(args.log_level) > 0 else config.get("log_level", "INFO")
+    )
     logger.setLevel(logging.getLevelName(log_level_name.upper()))
 
     lubelogger = Lubelogger(
@@ -257,17 +267,20 @@ def main(args):
         logger.info(
             "RUNNING FOR LUBELOGGER VEHICLE ID %d, FUELIO VEHICLE ID %d",
             lubelogger_id,
-            fuelio_id)
+            fuelio_id,
+        )
 
         logger.debug("Fetching Lubelogger vehicle data")
         lubelog_vehicle_info = lubelogger.get_vehicle_info(lubelogger_id)
 
-        lubelog_vehicle_title = ' '.join([
-                        str(lubelog_vehicle_info["year"]),
-                        lubelog_vehicle_info["make"],
-                        lubelog_vehicle_info["model"],
-                        f"({lubelog_vehicle_info["licensePlate"]})"
-                    ])
+        lubelog_vehicle_title = " ".join(
+            [
+                str(lubelog_vehicle_info["year"]),
+                lubelog_vehicle_info["make"],
+                lubelog_vehicle_info["model"],
+                f"({lubelog_vehicle_info['licensePlate']})",
+            ]
+        )
 
         logger.info("Found Lubelogger vehicle: %s", lubelog_vehicle_title)
 
@@ -275,7 +288,7 @@ def main(args):
         fuelio_fills = fetch_fuelio_data(
             folder_id=config["drive_folder_id"],
             vehicle_id=fuelio_id,
-            credentials_file=config["credentials_file_path"]
+            credentials_file=config["credentials_file_path"],
         )
 
         if len(fuelio_fills) == 0:
@@ -288,9 +301,12 @@ def main(args):
         logger.info(
             "Found %d fillups in Fuelio backup and %d in Lubelogger",
             len(list(fuelio_fills)),
-            len(lubelog_fills))
+            len(lubelog_fills),
+        )
 
-        process_fillups(fuelio_fills, lubelogger, lubelog_fills, lubelogger_id, args.dry_run)
+        process_fillups(
+            fuelio_fills, lubelogger, lubelog_fills, lubelogger_id, args.dry_run
+        )
 
 
 if __name__ == "__main__":
@@ -301,8 +317,8 @@ if __name__ == "__main__":
         "config_dir",
         type=str,
         help="Config directory",
-        default=os.environ.get('CONFIG_DIR', './config'),
-        nargs='?',
+        default=os.environ.get("CONFIG_DIR", "./config"),
+        nargs="?",
     )
     parser.add_argument(
         "--dry-run",

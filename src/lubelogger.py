@@ -93,15 +93,12 @@ class Lubelogger:
                 timeout=10,
                 headers=headers,
             )
-        except requests.exceptions.ReadTimeout:
-            logger.error("Lubelogger API timed out")
-
-        try:
             response.raise_for_status()
+            return response
         except requests.exceptions.HTTPError as exc:
             logger.error(exc)
-
-        return response
+        except requests.exceptions.ReadTimeout:
+            logger.error("Lubelogger API timed out")
 
     def get_vehicle_info(self, vehicle_id: int) -> dict:
         """Get vehicle info from Lubelogger"""
@@ -112,17 +109,11 @@ class Lubelogger:
                 timeout=10,
                 headers=headers,
             )
-        except requests.exceptions.ReadTimeout:
-            logger.error("Lubelogger API timed out")
-            return {}
-
-        try:
             response.raise_for_status()
-        except requests.exceptions.HTTPError as exc:
-            logger.error(exc)
-            return {}
-
-        try:
             return [v for v in response.json() if v["id"] == vehicle_id][0]
         except IndexError as exc:
             raise ValueError(f"No vehicle found with ID {vehicle_id}") from exc
+        except requests.exceptions.HTTPError as exc:
+            logger.error(exc)
+        except requests.exceptions.ReadTimeout:
+            logger.error("Lubelogger API timed out")

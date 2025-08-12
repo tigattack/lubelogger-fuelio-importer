@@ -47,7 +47,7 @@ class GDrive:
             logger.error(f"An error occurred while listing files: {error}")
             return []
 
-    def download_file(self, file_id: str, file_name: str) -> io.BytesIO:
+    def download_file(self, file_id: str, file_name: str) -> io.BytesIO | None:
         """Download a file from Google Drive"""
         try:
             request = self.service.files().get_media(fileId=file_id)
@@ -56,7 +56,7 @@ class GDrive:
 
             done = False
             while done is False:
-                status, done = downloader.next_chunk()
+                _, done = downloader.next_chunk()
 
             file_content.seek(0)
             return file_content

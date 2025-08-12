@@ -173,7 +173,7 @@ def process_fillups(
     fuelio_fills: list[dict],
     lubelogger: Lubelogger,
     lubelog_fills: list[LubeloggerFillup],
-    lubelogger_vehicle_id: str,
+    lubelogger_vehicle_id: int,
     dry_run: bool,
 ):
     """Processes fillups"""
@@ -251,13 +251,16 @@ def main(args):
     )
 
     for vehicle in config["sync_vehicles"]:
+        fuelio_id = int(vehicle["fuelio_id"])
+        lubelogger_id = int(vehicle["lubelogger_id"])
+
         logger.info(
             "RUNNING FOR LUBELOGGER VEHICLE ID %d, FUELIO VEHICLE ID %d",
-            vehicle["fuelio_id"],
-            vehicle["lubelogger_id"])
+            lubelogger_id,
+            fuelio_id)
 
         logger.debug("Fetching Lubelogger vehicle data")
-        lubelog_vehicle_info = lubelogger.get_vehicle_info(vehicle["lubelogger_id"])
+        lubelog_vehicle_info = lubelogger.get_vehicle_info(lubelogger_id)
 
         lubelog_vehicle_title = ' '.join([
                         str(lubelog_vehicle_info["year"]),
@@ -271,7 +274,7 @@ def main(args):
         logger.debug("Fetching Fuelio backup data")
         fuelio_fills = fetch_fuelio_data(
             folder_id=config["drive_folder_id"],
-            vehicle_id=vehicle["fuelio_id"],
+            vehicle_id=fuelio_id,
             credentials_file=config["credentials_file_path"]
         )
 
@@ -280,14 +283,14 @@ def main(args):
             return
 
         logger.debug("Fetching Lubelogger fillups")
-        lubelog_fills = lubelogger.get_fillups(vehicle["lubelogger_id"])
+        lubelog_fills = lubelogger.get_fillups(lubelogger_id)
 
         logger.info(
             "Found %d fillups in Fuelio backup and %d in Lubelogger",
             len(list(fuelio_fills)),
             len(lubelog_fills))
 
-        process_fillups(fuelio_fills, lubelogger, lubelog_fills, vehicle["lubelogger_id"], args.dry_run)
+        process_fillups(fuelio_fills, lubelogger, lubelog_fills, lubelogger_id, args.dry_run)
 
 
 if __name__ == "__main__":

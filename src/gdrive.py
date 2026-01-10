@@ -13,11 +13,12 @@ logger = logging.getLogger(__name__)
 
 class GDrive:
     def __init__(self, secrets_file_path: str = "service_secrets.json") -> None:
-        self.scope = ["https://www.googleapis.com/auth/drive.readonly"]
-        self.credentials = service_account.Credentials.from_service_account_file(
-            filename=secrets_file_path, scopes=self.scope
+        """Initialise GDrive client"""
+        credentials = service_account.Credentials.from_service_account_file(
+            filename=secrets_file_path,
+            scopes=["https://www.googleapis.com/auth/drive.readonly"],
         )
-        self.service = build("drive", "v3", credentials=self.credentials)
+        self.service = build("drive", "v3", credentials=credentials)
 
     def find_file(self, folder_id: str, filename: str = "") -> list[dict]:
         """Find files matching a name in a Google Drive folder"""

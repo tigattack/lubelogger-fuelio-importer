@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class GDrive:
     def __init__(self, secrets_file_path: str = "service_secrets.json") -> None:
-        self.scope = ["https://www.googleapis.com/auth/drive"]
+        self.scope = ["https://www.googleapis.com/auth/drive.readonly"]
         self.credentials = service_account.Credentials.from_service_account_file(
             filename=secrets_file_path, scopes=self.scope
         )

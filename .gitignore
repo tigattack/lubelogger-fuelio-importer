@@ -159,8 +159,10 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+.ruff_cache
+typings
+
 client_secrets.json
 service_secrets.json
 config.yml
 cached_creds.txt
-typings

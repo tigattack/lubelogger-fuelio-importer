@@ -1,0 +1,23 @@
+[project]
+name = "lubelogger-fuelio-importer"
+version = "0.1.0"
+description = "Import fuel fill-ups from Fuelio's Google Drive backups to Lubelogger"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [
+    { name = "tigattack" }
+]
+dependencies = [
+    "google-api-python-client>=2.187.0",
+    "google-auth-oauthlib>=1.2.3",
+    "pygments>=2.19.2",
+    "pyyaml>=6.0.3",
+    "requests>=2.32.5",
+]
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.408",
+    "ruff>=0.14.11",
+]

@@ -163,3 +163,4 @@ client_secrets.json
 service_secrets.json
 config.yml
 cached_creds.txt
+typings

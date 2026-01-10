@@ -18,7 +18,8 @@ from pygments.formatters import Terminal256Formatter
 from pygments.lexers import PythonLexer
 
 import gdrive
-from lubelogger import FILLUP_IGNORE_KEYS, Lubelogger, LubeloggerFillup
+from lubelogger import Lubelogger
+from models import FILLUP_IGNORE_KEYS, LubeloggerFillup
 
 
 def pprint_colour(obj: Any) -> None:

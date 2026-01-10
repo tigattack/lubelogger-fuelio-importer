@@ -42,6 +42,7 @@ class Lubelogger:
         self.password = password
         self.session = requests.Session()
         self.session.auth = HTTPBasicAuth(self.username, self.password)
+        self.session.headers.update({"culture-invariant": "true"})
 
     def _create_fillup(self, fillup) -> LubeloggerFillup:
         return LubeloggerFillup(
@@ -57,13 +58,11 @@ class Lubelogger:
     def get_fillups(self, vehicle_id: int) -> list[LubeloggerFillup]:
         """Get all fuel fillup logs from Lubelogger"""
         params = {"vehicleId": vehicle_id}
-        headers = {'culture-invariant': "true"}
         try:
             response = self.session.get(
                 f"{self.url}/api/vehicle/gasrecords",
                 params=params,
                 timeout=10,
-                headers=headers,
             )
         except requests.exceptions.ReadTimeout:
             logger.error("Lubelogger API timed out")
@@ -84,14 +83,12 @@ class Lubelogger:
     def add_fillup(self, vehicle_id: int, fillup: LubeloggerFillup):
         """Add a fuel fillup log to Lubelogger"""
         params = {"vehicleId": vehicle_id}
-        headers = {'culture-invariant': "true"}
         try:
             response = self.session.post(
                 f"{self.url}/api/vehicle/gasrecords/add",
                 fillup.to_lubelogger_api_format(),
                 params=params,
                 timeout=10,
-                headers=headers,
             )
             response.raise_for_status()
             return response
@@ -102,12 +99,10 @@ class Lubelogger:
 
     def get_vehicle_info(self, vehicle_id: int) -> dict | None:
         """Get vehicle info from Lubelogger"""
-        headers = {'culture-invariant': "true"}
         try:
             response = self.session.get(
                 f"{self.url}/api/vehicles",
                 timeout=10,
-                headers=headers,
             )
             response.raise_for_status()
             return [v for v in response.json() if v["id"] == vehicle_id][0]

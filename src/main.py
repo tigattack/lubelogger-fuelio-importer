@@ -18,7 +18,7 @@ from pygments.formatters import Terminal256Formatter
 from pygments.lexers import PythonLexer
 
 import gdrive
-from lubelogger import Lubelogger, LubeloggerFillup
+from lubelogger import FILLUP_IGNORE_KEYS, Lubelogger, LubeloggerFillup
 
 
 def pprint_colour(obj: Any) -> None:
@@ -159,6 +159,11 @@ def fetch_fuelio_data(
     return fuelio_fills
 
 
+def fillup_to_comparable_dict(fillup: LubeloggerFillup) -> dict:
+    """Convert fillup to dict excluding ignored keys for comparison"""
+    return {k: v for k, v in fillup.to_dict().items() if k not in FILLUP_IGNORE_KEYS}
+
+
 def find_duplicate_fillups(
     new_fill: LubeloggerFillup, lubelog_fills: list[LubeloggerFillup]
 ):
@@ -191,8 +196,12 @@ def process_fillups(
 
         # Check if the converted fillup already
         # exists in lubelogger and fully matches
-        # the incoming Fuelio fillup. If so, skip.
-        if not any(ll_fill == new_ll_fill for ll_fill in lubelog_fills):
+        # the incoming Fuelio fillup. If so, log and skip.
+        new_fill_comparable = fillup_to_comparable_dict(new_ll_fill)
+        if not any(
+            fillup_to_comparable_dict(ll_fill) == new_fill_comparable
+            for ll_fill in lubelog_fills
+        ):
             is_lubelogger_missing_logs = True
 
             # Check if a fillup already exists for given date
@@ -212,9 +221,13 @@ def process_fillups(
                     logger.debug("Incoming fill:")
                     pprint_colour(new_ll_fill.to_dict())
 
-                # Log each key/value pair that does not match
+                # Log each key/value pair that does not match (excluding ignored keys)
                 for k, v in new_ll_fill.to_dict().items():
-                    if k in dupe_ll_fill and v != dupe_ll_fill[k]:
+                    if (
+                        k not in FILLUP_IGNORE_KEYS
+                        and k in dupe_ll_fill
+                        and v != dupe_ll_fill[k]
+                    ):
                         logger.warning(
                             'The current value of attribute "%s":\n%s',
                             k,

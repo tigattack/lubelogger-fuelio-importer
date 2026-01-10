@@ -6,6 +6,15 @@ from requests.auth import HTTPBasicAuth
 
 logger = logging.getLogger(__name__)
 
+# Keys to drop when sending fillup data to the API or comparing fillups
+FILLUP_IGNORE_KEYS = [
+    "id",
+    "fuel_economy",
+    "extra_fields",
+    "files",
+]
+
+
 # Source - https://stackoverflow.com/a/19053800
 # Posted by jbaiter, modified by community. See post 'Timeline' for change history
 # Retrieved 2024-03-15, License - CC BY-SA 4.0
@@ -36,7 +45,12 @@ class LubeloggerFillup:
     cost: float
     is_fill_to_full: bool
     missed_fuel_up: bool
+    id: int | None = None
+    fuel_economy: float = 0
     notes: str = ""
+    tags: str = ""
+    extra_fields: list = field(default_factory=list)
+    files: list = field(default_factory=list)
 
     def to_dict(self) -> dict:
         """Return fillup as dict"""
@@ -44,7 +58,10 @@ class LubeloggerFillup:
 
     def to_api_dict(self) -> dict:
         """Return fillup as dict for Lubelogger API (camelCase keys)"""
-        return {to_camel_case(k): v for k, v in asdict(self).items()}
+        data = asdict(self)
+        for key in FILLUP_IGNORE_KEYS:
+            data.pop(key, None)
+        return {to_camel_case(k): v for k, v in data.items()}
 
     @classmethod
     def from_api_response(cls, data: dict) -> "LubeloggerFillup":

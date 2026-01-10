@@ -32,6 +32,19 @@ class LubeloggerFillup:
         """Return fillup as dict for use in Lubelogger API"""
         return {to_lower_camel_case(k): v for k, v in asdict(self).items()}
 
+    @classmethod
+    def from_api_response(cls, data: dict) -> "LubeloggerFillup":
+        """Create a LubeloggerFillup from Lubelogger API response data"""
+        return cls(
+            date=data["date"],
+            odometer=int(data["odometer"]),
+            fuel_consumed=data["fuelConsumed"],
+            cost=data["cost"],
+            is_fill_to_full=data["isFillToFull"],
+            missed_fuel_up=data["missedFuelUp"],
+            notes=data["notes"] if data["notes"] else "",
+        )
+
 
 class Lubelogger:
     """Lubelogger API client"""
@@ -43,17 +56,6 @@ class Lubelogger:
         self.session = requests.Session()
         self.session.auth = HTTPBasicAuth(self.username, self.password)
         self.session.headers.update({"culture-invariant": "true"})
-
-    def _create_fillup(self, fillup) -> LubeloggerFillup:
-        return LubeloggerFillup(
-            fillup["date"],
-            int(fillup["odometer"]),
-            fillup["fuelConsumed"],
-            fillup["cost"],
-            fillup["isFillToFull"],
-            fillup["missedFuelUp"],
-            fillup["notes"] if fillup["notes"] else "",
-        )
 
     def get_fillups(self, vehicle_id: int) -> list[LubeloggerFillup]:
         """Get all fuel fillup logs from Lubelogger"""
@@ -74,11 +76,7 @@ class Lubelogger:
             logger.error(exc)
             return []
 
-        fillups = []
-        for fillup in response.json():
-            fillups.append(self._create_fillup(fillup))
-
-        return fillups
+        return [LubeloggerFillup.from_api_response(f) for f in response.json()]
 
     def add_fillup(self, vehicle_id: int, fillup: LubeloggerFillup):
         """Add a fuel fillup log to Lubelogger"""

@@ -1,4 +1,5 @@
 from dataclasses import asdict, dataclass, field
+
 from util import from_camel_case, to_camel_case
 
 # Keys to drop when sending fillup data to the API or comparing fillups

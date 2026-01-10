@@ -282,10 +282,10 @@ def main(args):
 
         lubelog_vehicle_title = " ".join(
             [
-                str(lubelog_vehicle_info["year"]),
-                lubelog_vehicle_info["make"],
-                lubelog_vehicle_info["model"],
-                f"({lubelog_vehicle_info['licensePlate']})",
+                str(lubelog_vehicle_info.year),
+                lubelog_vehicle_info.make,
+                lubelog_vehicle_info.model,
+                f"({lubelog_vehicle_info.license_plate})",
             ]
         )
 

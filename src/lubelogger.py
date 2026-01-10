@@ -1,5 +1,5 @@
 import logging
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -14,6 +14,16 @@ def to_camel_case(snake_str):
     """Convert snake_case string to camelCase"""
     camel_string = "".join(x.capitalize() for x in snake_str.lower().split("_"))
     return snake_str[0].lower() + camel_string[1:]
+
+
+def from_camel_case(camel_str):
+    """Convert camelCase string to snake_case"""
+    result = []
+    for i, char in enumerate(camel_str):
+        if char.isupper() and i > 0:
+            result.append("_")
+        result.append(char.lower())
+    return "".join(result)
 
 
 @dataclass
@@ -48,6 +58,44 @@ class LubeloggerFillup:
             missed_fuel_up=data["missedFuelUp"],
             notes=data["notes"] if data["notes"] else "",
         )
+
+
+@dataclass
+class LubeloggerVehicleInfo:
+    """Lubelogger vehicle info object"""
+
+    id: int
+    year: int
+    make: str
+    model: str
+    license_plate: str
+    image_location: str = ""
+    map_location: str = ""
+    purchase_date: str = ""
+    sold_date: str = ""
+    purchase_price: float = 0.0
+    sold_price: float = 0.0
+    is_electric: bool = False
+    is_diesel: bool = False
+    use_hours: bool = False
+    odometer_optional: bool = False
+    extra_fields: list = field(default_factory=list)
+    tags: list = field(default_factory=list)
+    has_odometer_adjustment: bool = False
+    odometer_multiplier: int = 1
+    odometer_difference: int = 0
+    dashboard_metrics: list = field(default_factory=list)
+    vehicle_identifier: str = "LicensePlate"
+
+    def to_dict(self) -> dict:
+        """Return vehicle info as dict"""
+        return asdict(self)
+
+    @classmethod
+    def from_api_response(cls, data: dict) -> "LubeloggerVehicleInfo":
+        """Create a LubeloggerVehicleInfo from Lubelogger API response data"""
+        snake_case_data = {from_camel_case(k): v for k, v in data.items()}
+        return cls(**snake_case_data)
 
 
 class Lubelogger:
@@ -99,7 +147,7 @@ class Lubelogger:
         except requests.exceptions.ReadTimeout:
             logger.error("Lubelogger API timed out")
 
-    def get_vehicle_info(self, vehicle_id: int) -> dict | None:
+    def get_vehicle_info(self, vehicle_id: int) -> LubeloggerVehicleInfo | None:
         """Get vehicle info from Lubelogger"""
         params = {"vehicleId": vehicle_id}
         try:
@@ -112,7 +160,7 @@ class Lubelogger:
             data = response.json()
             # API returns a list with a single element containing vehicleData
             if data and len(data) > 0 and "vehicleData" in data[0]:
-                return data[0]["vehicleData"]
+                return LubeloggerVehicleInfo.from_api_response(data[0]["vehicleData"])
             return None
         except requests.exceptions.ReadTimeout:
             logger.error("Lubelogger API timed out while fetching vehicle info")

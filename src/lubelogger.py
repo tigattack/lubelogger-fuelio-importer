@@ -6,8 +6,8 @@ from requests.auth import HTTPBasicAuth
 
 logger = logging.getLogger(__name__)
 
-
-def to_lower_camel_case(snake_str):
+def to_camel_case(snake_str):
+    """Convert snake_case string to camelCase"""
     camel_string = "".join(x.capitalize() for x in snake_str.lower().split("_"))
     return snake_str[0].lower() + camel_string[1:]
 
@@ -26,11 +26,11 @@ class LubeloggerFillup:
 
     def to_dict(self) -> dict:
         """Return fillup as dict"""
-        return dict(asdict(self).items())
+        return asdict(self)
 
-    def to_lubelogger_api_format(self) -> dict:
-        """Return fillup as dict for use in Lubelogger API"""
-        return {to_lower_camel_case(k): v for k, v in asdict(self).items()}
+    def to_api_dict(self) -> dict:
+        """Return fillup as dict for Lubelogger API (camelCase keys)"""
+        return {to_camel_case(k): v for k, v in asdict(self).items()}
 
     @classmethod
     def from_api_response(cls, data: dict) -> "LubeloggerFillup":
@@ -84,7 +84,7 @@ class Lubelogger:
         try:
             response = self.session.post(
                 f"{self.url}/api/vehicle/gasrecords/add",
-                fillup.to_lubelogger_api_format(),
+                fillup.to_api_dict(),
                 params=params,
                 timeout=10,
             )

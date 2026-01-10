@@ -18,6 +18,7 @@ class Lubelogger:
         self.session = requests.Session()
         self.session.auth = HTTPBasicAuth(self.username, self.password)
         self.session.headers.update({"culture-invariant": "true"})
+        self.timeout = 10
 
     def get_fillups(self, vehicle_id: int) -> list[LubeloggerFillup]:
         """Get all fuel fillup logs from Lubelogger"""
@@ -27,7 +28,7 @@ class Lubelogger:
             response = self.session.get(
                 f"{self.url}/api/vehicle/gasrecords",
                 params=params,
-                timeout=10,
+                timeout=self.timeout,
             )
             response.raise_for_status()
         except requests.exceptions.ReadTimeout:
@@ -57,7 +58,7 @@ class Lubelogger:
                 f"{self.url}/api/vehicle/gasrecords/add",
                 data=fillup.to_api_dict(),
                 params=params,
-                timeout=10,
+                timeout=self.timeout,
             )
             response.raise_for_status()
             return response
@@ -83,7 +84,7 @@ class Lubelogger:
             response = self.session.get(
                 f"{self.url}/api/vehicle/info",
                 params=params,
-                timeout=10,
+                timeout=self.timeout,
             )
             response.raise_for_status()
             data = response.json()

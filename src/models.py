@@ -10,6 +10,8 @@ FILLUP_IGNORE_KEYS = [
     "files",
 ]
 
+DEFAULT_VECHICLE_IDENTIFIER = "LicensePlate"
+
 
 @dataclass
 class LubeloggerFillup:
@@ -71,7 +73,7 @@ class LubeloggerVehicleInfo:
     odometer_multiplier: int = 1
     odometer_difference: int = 0
     dashboard_metrics: list = field(default_factory=list)
-    vehicle_identifier: str = "LicensePlate"
+    vehicle_identifier: str = DEFAULT_VECHICLE_IDENTIFIER
 
     def to_dict(self) -> dict:
         """Return vehicle info as dict"""

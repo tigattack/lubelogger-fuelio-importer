@@ -6,6 +6,8 @@ on:
     paths:
       - 'src/**'
       - 'tests/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
       - '.github/workflows/test.yml'
   workflow_dispatch:
   workflow_call:
@@ -16,20 +18,15 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v7
         with:
-          python-version: '3.14'
-          cache: 'pip'
-          cache-dependency-path: 'src/requirements.txt'
+          enable-cache: true
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r src/requirements.txt
-          pip install ruff
+        run: uv sync --frozen --group dev
 
-      - run: ruff check src/
+      - run: uv run --frozen ruff check src/
 
-      - run: ruff format --check src/
+      - run: uv run --frozen ruff format --check src/
 
-      - run: python -m unittest discover -s tests -p "test_*.py" -v
+      - run: uv run --frozen python -m unittest discover -s tests -p "test_*.py" -v

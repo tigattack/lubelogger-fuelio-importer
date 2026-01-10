@@ -21,17 +21,11 @@ class GDrive:
 
     def find_file(self, folder_id: str, filename: str = "") -> list[dict]:
         """Find files matching a name in a Google Drive folder"""
+        query = f"'{folder_id}' in parents and trashed=false"
+        if filename:
+            query += f" and name='{filename}'"
+
         try:
-            # Build query
-            query_parts = []
-            if folder_id:
-                query_parts.append(f"'{folder_id}' in parents")
-            query_parts.append("trashed=false")
-            if filename:
-                query_parts.append(f"name='{filename}'")
-
-            query = " and ".join(query_parts)
-
             results = (
                 self.service.files()
                 .list(

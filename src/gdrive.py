@@ -1,80 +1,60 @@
 """GDrive API client"""
 
-import enum
+import io
 import logging
-import sys
-import warnings
 
-from pydrive2.auth import AuthenticationError, GoogleAuth
-from pydrive2.drive import GoogleDrive
-from pydrive2.files import GoogleDriveFile
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload
+from googleapiclient.errors import HttpError
 
 logger = logging.getLogger(__name__)
 
 
-class AuthType(enum.Enum):
-    SERVICE = "service"
-    CLIENT = "client"
-
-
 class GDrive:
-    def __init__(self, auth_type: AuthType) -> None:
-        assert auth_type in AuthType, "Invalid auth_type"
+    def __init__(self, secrets_file_path: str = "service_secrets.json") -> None:
+        """Initialise GDrive client"""
+        credentials = service_account.Credentials.from_service_account_file(
+            filename=secrets_file_path,
+            scopes=["https://www.googleapis.com/auth/drive.readonly"],
+        )
+        self.service = build("drive", "v3", credentials=credentials)
 
-        if auth_type == AuthType.SERVICE:
-            self.auth = self.drive_service_auth()
-        elif auth_type == AuthType.CLIENT:
-            self.auth = self.drive_client_auth()
-
-        self.drive = GoogleDrive(self.auth)
-
-    def drive_service_auth(self) -> GoogleAuth:
-        """
-        Performs non-interactive authentication with
-        Google Drive API using service account credentials
-        """
-        auth_settings = {
-            "client_config_backend": "service",
-            "service_config": {"client_json_file_path": "service_secrets.json"},
-        }
-        gauth = GoogleAuth(settings=auth_settings)
-        gauth.ServiceAuth()
-        return gauth
-
-    def drive_client_auth(self) -> GoogleAuth:
-        """
-        Performs interactive authentication with
-        Google Drive API using client credentials
-        """
-        gauth = GoogleAuth()
-
-        warnings.filterwarnings("ignore")
-
-        gauth.LoadCredentialsFile("cached_creds.txt")
-        if gauth.credentials is None:
-            try:
-                gauth.LocalWebserverAuth()
-            except AuthenticationError:
-                logger.error("Authentication failed")
-                sys.exit(1)
-        elif gauth.access_token_expired:
-            gauth.Refresh()
-        else:
-            gauth.Authorize()
-        gauth.SaveCredentialsFile("mycreds.txt")
-
-        return gauth
-
-    def find_file(self, folder_id: str, filename: str = "") -> list[GoogleDriveFile]:
+    def find_file(self, folder_id: str, filename: str = "") -> list[dict]:
         """Find files matching a name in a Google Drive folder"""
-        query = {
-            "q": (
-                f"'{folder_id}' in parents and trashed=false"
-                + " and title='"
-                + filename
-                + "'"
-                if filename
-                else ""
+        query = f"'{folder_id}' in parents and trashed=false"
+        if filename:
+            query += f" and name='{filename}'"
+
+        try:
+            results = (
+                self.service.files()
+                .list(
+                    q=query,
+                    pageSize=1000,
+                    fields="nextPageToken, files(id, name, mimeType, size, modifiedTime, parents)",
+                )
+                .execute()
             )
-        }
-        return self.drive.ListFile(query).GetList()
+
+            return results.get("files", [])
+        except HttpError as error:
+            logger.error(f"An error occurred while listing files: {error}")
+            return []
+
+    def download_file(self, file_id: str) -> io.BytesIO | None:
+        """Download a file from Google Drive"""
+        try:
+            request = self.service.files().get_media(fileId=file_id)
+            file_content = io.BytesIO()
+            downloader = MediaIoBaseDownload(file_content, request)
+
+            done = False
+            while done is False:
+                _, done = downloader.next_chunk()
+
+            file_content.seek(0)
+            return file_content
+        except HttpError as error:
+            logger.error(f"An error occurred while downloading file: {error}")
+            return None

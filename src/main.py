@@ -53,9 +53,11 @@ def fuelio_csv_from_backup(
     """Returns Fuelio data from Google Drive backup"""
     with tempfile.TemporaryDirectory() as tempdir:
         # Download the ZIP file from Google Drive
-        zip_content = drive.download_file(backup["id"], backup["name"])
+        zip_content = drive.download_file(backup["id"])
         if not zip_content:
-            raise RuntimeError(f"Failed to download backup file: {backup['name']}")
+            raise RuntimeError(
+                f"Failed to download backup file: {backup['name']} (ID: {backup['id']})"
+            )
 
         # Extract the ZIP file
         extract_path = os.path.join(tempdir, "fuelio")

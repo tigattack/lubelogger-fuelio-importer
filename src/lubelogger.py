@@ -66,15 +66,8 @@ class LubeloggerFillup:
     @classmethod
     def from_api_response(cls, data: dict) -> "LubeloggerFillup":
         """Create a LubeloggerFillup from Lubelogger API response data"""
-        return cls(
-            date=data["date"],
-            odometer=int(data["odometer"]),
-            fuel_consumed=data["fuelConsumed"],
-            cost=data["cost"],
-            is_fill_to_full=data["isFillToFull"],
-            missed_fuel_up=data["missedFuelUp"],
-            notes=data["notes"] if data["notes"] else "",
-        )
+        snake_case_data = {from_camel_case(k): v for k, v in data.items()}
+        return cls(**snake_case_data)
 
 
 @dataclass

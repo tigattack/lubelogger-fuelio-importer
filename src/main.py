@@ -274,6 +274,11 @@ def main(args):
 
         logger.debug("Fetching Lubelogger vehicle data")
         lubelog_vehicle_info = lubelogger.get_vehicle_info(lubelogger_id)
+        if not lubelog_vehicle_info:
+            logger.error(
+                "Failed to fetch info for Lubelogger vehicle with ID %d", lubelogger_id
+            )
+            continue
 
         lubelog_vehicle_title = " ".join(
             [

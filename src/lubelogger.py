@@ -100,7 +100,7 @@ class Lubelogger:
         except requests.exceptions.ReadTimeout:
             logger.error("Lubelogger API timed out")
 
-    def get_vehicle_info(self, vehicle_id: int) -> dict:
+    def get_vehicle_info(self, vehicle_id: int) -> dict | None:
         """Get vehicle info from Lubelogger"""
         headers = {'culture-invariant': "true"}
         try:

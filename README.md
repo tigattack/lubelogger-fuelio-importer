@@ -9,6 +9,23 @@ Python script to import fuel records from [Fuelio](https://fuel.io/)'s Google Dr
 
 # Usage
 
+```
+❯ python3 main.py -h
+usage: main.py [-h] [--dry-run] [--log-level {debug,info,warning,error,critical}]
+               [config_dir]
+
+Import Fuelio fuel records into LubeLogger
+
+positional arguments:
+  config_dir            Config directory
+
+options:
+  -h, --help            show this help message and exit
+  --dry-run             Perform a dry run without making any changes
+  --log-level {debug,info,warning,error,critical}
+                        Log level to use (overrides config file)
+```
+
 **Defaults:**
 
 * The log level set in the execution args (`--log-level`) takes presedence over config.yml's `log_level`. If neither are set, it will default to `INFO`.

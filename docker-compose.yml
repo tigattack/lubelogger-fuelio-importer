@@ -1,7 +1,7 @@
 ---
-
+name: lubelogger-fuelio-importer
 services:
-  lubelogger-fuelio-importer:
+  app:
     image: ghcr.io/tigattack/lubelogger-fuelio-importer:latest
     # Optional flags, e.g. enable dry run mode
     # command: --dry-run

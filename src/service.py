@@ -6,9 +6,9 @@ from pprint import pformat
 from textwrap import dedent
 from typing import Any
 
-from pygments import highlight
+from pygments import highlight  # type: ignore[import-untyped]
 from pygments.formatters import Terminal256Formatter
-from pygments.lexers import PythonLexer
+from pygments.lexers import PythonLexer  # type: ignore[import-untyped]
 
 from fuelio import FuelioClient, FuelioFillup
 from lubelogger import Lubelogger
@@ -19,7 +19,7 @@ from models import FILLUP_IGNORE_KEYS, LubeloggerFillup
 def pprint_colour(obj: Any) -> None:
     """Pretty-print object with syntax highlighting if terminal supports it"""
     if sys.stdout.isatty():
-        print(highlight(pformat(obj), PythonLexer(), Terminal256Formatter()), end="")
+        print(highlight(pformat(obj), PythonLexer(), Terminal256Formatter()), end="")  # type: ignore[arg-type]
     else:
         print(pformat(obj))
 
@@ -66,7 +66,7 @@ class SyncService:
         )
 
     @staticmethod
-    def fillup_to_comparable_dict(fillup: LubeloggerFillup) -> dict:
+    def fillup_to_comparable_dict(fillup: LubeloggerFillup) -> dict[str, Any]:
         """Convert fillup to dict excluding ignored keys for comparison"""
         return {
             k: v for k, v in fillup.to_dict().items() if k not in FILLUP_IGNORE_KEYS
@@ -74,7 +74,7 @@ class SyncService:
 
     def find_duplicate(
         self, new_fill: LubeloggerFillup, existing_fills: list[LubeloggerFillup]
-    ) -> dict | None:
+    ) -> dict[str, Any] | None:
         """Find duplicate fillup by date and odometer"""
         return next(
             (
@@ -86,7 +86,7 @@ class SyncService:
         )
 
     def log_duplicate_differences(
-        self, new_fill: LubeloggerFillup, existing_fill: dict
+        self, new_fill: LubeloggerFillup, existing_fill: dict[str, Any]
     ) -> None:
         """Log differences between new and existing fillup"""
         self.logger.warning(

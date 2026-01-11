@@ -7,10 +7,15 @@ import zipfile
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from exceptions import FuelioDataError, GDriveError
 from gdrive import GDrive
+
+if TYPE_CHECKING:
+    from googleapiclient._apis.drive.v3.schemas import (  # type: ignore[import-not-found]
+        File,
+    )
 
 
 # CSV field indices for Fuelio fillup data
@@ -129,10 +134,12 @@ class FuelioClient:
             )
 
         backup = backups[0]
+        backup_name = backup.get("name", "unknown")
+        backup_id = backup.get("id", "unknown")
         self.logger.debug(
             "Found backup: %s (ID: %s, modified: %s)",
-            backup["name"],
-            backup["id"],
+            backup_name,
+            backup_id,
             backup.get("modifiedTime", "unknown"),
         )
 
@@ -146,16 +153,19 @@ class FuelioClient:
         return fillups
 
     def _extract_csv_from_backup(
-        self, backup: dict[str, Any], csv_filename: str
+        self, backup: File, csv_filename: str
     ) -> list[dict[str, Any]]:
         """Extract CSV data from ZIP backup"""
+        backup_name = backup.get("name", "unknown")
+        backup_id = backup.get("id", "unknown")
+
         with tempfile.TemporaryDirectory() as tempdir:
             # Download ZIP file
             try:
-                zip_content = self.drive.download_file(backup["id"])
+                zip_content = self.drive.download_file(backup_id)
             except GDriveError as e:
                 raise FuelioDataError(
-                    f"Failed to download backup file {backup['name']} (ID: {backup['id']}): {e}"
+                    f"Failed to download backup file {backup_name} (ID: {backup_id}): {e}"
                 ) from e
 
             # Extract ZIP
@@ -166,7 +176,7 @@ class FuelioClient:
                 with zipfile.ZipFile(zip_content, "r") as zip_ref:
                     zip_ref.extractall(extract_path)
             except zipfile.BadZipFile as e:
-                raise FuelioDataError(f"Invalid ZIP file: {backup['name']}") from e
+                raise FuelioDataError(f"Invalid ZIP file: {backup_name}") from e
 
             # Read CSV
             csv_path = extract_path / csv_filename
@@ -184,7 +194,7 @@ class FuelioClient:
         Fuelio CSV contains multiple sections. Fillup records have a datetime
         in the '## Vehicle' column (format: YYYY-MM-DD HH:MM).
         """
-        fillups = []
+        fillups: list[FuelioFillup] = []
         for row in csv_data:
             try:
                 # Try to parse as datetime - this identifies fillup records

@@ -13,7 +13,6 @@ from service import SyncService
 
 def main():
     """Main entry point for Fuelio to Lubelogger sync"""
-    # Parse CLI arguments
     args = parse_args()
 
     # Load configuration

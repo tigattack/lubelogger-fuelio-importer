@@ -5,7 +5,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Lubelogger Fuelio Sync",
+      "name": "LubeLogger Fuelio Sync",
       "type": "debugpy",
       "request": "launch",
       "program": "main.py",

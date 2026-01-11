@@ -1,22 +1,22 @@
-"""Lubelogger API client"""
+"""LubeLogger API client"""
 
 import logging
 
 import requests
 from requests.auth import HTTPBasicAuth
 
-from exceptions import LubeloggerAPIError
+from exceptions import LubeLoggerAPIError
 from models import (
-    LubeloggerAddFillupResponse,
-    LubeloggerFillup,
-    LubeloggerVehicleInfo,
+    LubeLoggerAddFuelRecordResponse,
+    LubeLoggerFuelRecord,
+    LubeLoggerVehicleInfo,
 )
 
 logger = logging.getLogger(__name__)
 
 
-class Lubelogger:
-    """Lubelogger API client"""
+class LubeLogger:
+    """LubeLogger API client"""
 
     def __init__(self, url: str, username: str, password: str):
         self.url = url
@@ -27,8 +27,8 @@ class Lubelogger:
         self.session.headers.update({"culture-invariant": "true"})
         self.timeout = 10
 
-    def get_fillups(self, vehicle_id: int) -> list[LubeloggerFillup]:
-        """Get all fuel fillup logs from Lubelogger"""
+    def get_fuel_records(self, vehicle_id: int) -> list[LubeLoggerFuelRecord]:
+        """Get all fuel record logs from LubeLogger"""
         params = {"vehicleId": vehicle_id}
         response = None
         try:
@@ -39,52 +39,52 @@ class Lubelogger:
             )
             response.raise_for_status()
         except requests.exceptions.ReadTimeout as exc:
-            raise LubeloggerAPIError(
-                f"API timed out while fetching fillups for vehicle {vehicle_id}"
+            raise LubeLoggerAPIError(
+                f"API timed out while fetching fuel records for vehicle {vehicle_id}"
             ) from exc
         except requests.exceptions.HTTPError as exc:
             status = response.status_code if response else "unknown"
-            raise LubeloggerAPIError(
-                f"HTTP {status} error fetching fillups for vehicle {vehicle_id}: {exc}"
+            raise LubeLoggerAPIError(
+                f"HTTP {status} error fetching fuel records for vehicle {vehicle_id}: {exc}"
             ) from exc
         except requests.exceptions.RequestException as exc:
-            raise LubeloggerAPIError(
-                f"Request failed while fetching fillups for vehicle {vehicle_id}: {exc}"
+            raise LubeLoggerAPIError(
+                f"Request failed while fetching fuel records for vehicle {vehicle_id}: {exc}"
             ) from exc
 
-        return [LubeloggerFillup.from_api_response(f) for f in response.json()]
+        return [LubeLoggerFuelRecord.from_api_response(f) for f in response.json()]
 
-    def add_fillup(
-        self, vehicle_id: int, fillup: LubeloggerFillup
-    ) -> LubeloggerAddFillupResponse:
-        """Add a fuel fillup log to Lubelogger"""
+    def add_fuel_record(
+        self, vehicle_id: int, fuel_record: LubeLoggerFuelRecord
+    ) -> LubeLoggerAddFuelRecordResponse:
+        """Add a fuel record log to LubeLogger"""
         params = {"vehicleId": vehicle_id}
         response = None
         try:
             response = self.session.post(
                 f"{self.url}/api/vehicle/gasrecords/add",
-                data=fillup.to_api_dict(),
+                data=fuel_record.to_api_dict(),
                 params=params,
                 timeout=self.timeout,
             )
             response.raise_for_status()
-            return LubeloggerAddFillupResponse.from_api_response(response.json())
+            return LubeLoggerAddFuelRecordResponse.from_api_response(response.json())
         except requests.exceptions.ReadTimeout as exc:
-            raise LubeloggerAPIError(
-                f"API timed out while adding fillup to vehicle {vehicle_id}"
+            raise LubeLoggerAPIError(
+                f"API timed out while adding fuel record to vehicle {vehicle_id}"
             ) from exc
         except requests.exceptions.HTTPError as exc:
             status = response.status_code if response else "unknown"
-            raise LubeloggerAPIError(
-                f"HTTP {status} error adding fillup to vehicle {vehicle_id}: {exc}"
+            raise LubeLoggerAPIError(
+                f"HTTP {status} error adding fuel record to vehicle {vehicle_id}: {exc}"
             ) from exc
         except requests.exceptions.RequestException as exc:
-            raise LubeloggerAPIError(
-                f"Request failed while adding fillup to vehicle {vehicle_id}: {exc}"
+            raise LubeLoggerAPIError(
+                f"Request failed while adding fuel record to vehicle {vehicle_id}: {exc}"
             ) from exc
 
-    def get_vehicle_info(self, vehicle_id: int) -> LubeloggerVehicleInfo:
-        """Get vehicle info from Lubelogger"""
+    def get_vehicle_info(self, vehicle_id: int) -> LubeLoggerVehicleInfo:
+        """Get vehicle info from LubeLogger"""
         params = {"vehicleId": vehicle_id}
         response = None
         try:
@@ -97,20 +97,20 @@ class Lubelogger:
             data = response.json()
             # API returns a list with a single element containing vehicleData
             if data and len(data) > 0 and "vehicleData" in data[0]:
-                return LubeloggerVehicleInfo.from_api_response(data[0]["vehicleData"])
-            raise LubeloggerAPIError(
+                return LubeLoggerVehicleInfo.from_api_response(data[0]["vehicleData"])
+            raise LubeLoggerAPIError(
                 f"Vehicle {vehicle_id} not found or invalid response format"
             )
         except requests.exceptions.ReadTimeout as exc:
-            raise LubeloggerAPIError(
+            raise LubeLoggerAPIError(
                 f"API timed out while fetching info for vehicle {vehicle_id}"
             ) from exc
         except requests.exceptions.HTTPError as exc:
             status = response.status_code if response else "unknown"
-            raise LubeloggerAPIError(
+            raise LubeLoggerAPIError(
                 f"HTTP {status} error fetching info for vehicle {vehicle_id}: {exc}"
             ) from exc
         except requests.exceptions.RequestException as exc:
-            raise LubeloggerAPIError(
+            raise LubeLoggerAPIError(
                 f"Request failed while fetching info for vehicle {vehicle_id}: {exc}"
             ) from exc

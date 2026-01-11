@@ -19,9 +19,9 @@ class VehicleConfig(BaseModel):
 class Config(BaseModel):
     """Application configuration with pydantic validation"""
 
-    lubelogger_url: str = Field(..., description="Lubelogger instance URL")
-    lubelogger_username: str = Field(..., description="Lubelogger username")
-    lubelogger_password: str = Field(..., description="Lubelogger password")
+    lubelogger_url: str = Field(..., description="LubeLogger instance URL")
+    lubelogger_username: str = Field(..., description="LubeLogger username")
+    lubelogger_password: str = Field(..., description="LubeLogger password")
     drive_folder_id: str = Field(..., description="Google Drive folder ID")
     credentials_file_path: str = Field(
         ..., description="Path to Google credentials file"

@@ -9,25 +9,25 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from models import (
-    FILLUP_EXCLUDE_KEYS,
-    LubeloggerFillup,
-    LubeloggerVehicleInfo,
+    FUEL_RECORD_EXCLUDE_KEYS,
+    LubeLoggerFuelRecord,
+    LubeLoggerVehicleInfo,
 )
 
 
-class TestLubeloggerFillup(unittest.TestCase):
-    """Test LubeloggerFillup dataclass"""
+class TestLubeLoggerFuelRecord(unittest.TestCase):
+    """Test LubeLoggerFuelRecord dataclass"""
 
     def setUp(self):
         """Set up test data"""
-        self.fillup_data = {
+        self.fuel_record_data = {
             "date": "2024-01-15",
             "odometer": 150000,
             "fuel_consumed": 45.5,
             "cost": 75.25,
             "is_fill_to_full": True,
             "missed_fuel_up": False,
-            "notes": "Test fillup",
+            "notes": "Test fuel record",
             "tags": "highway",
         }
 
@@ -40,37 +40,37 @@ class TestLubeloggerFillup(unittest.TestCase):
             "missedFuelUp": False,
             "id": 123,
             "fuelEconomy": 6.5,
-            "notes": "Test fillup",
+            "notes": "Test fuel record",
             "tags": "highway",
             "extraFields": [],
             "files": [],
         }
 
-    def test_fillup_creation(self):
-        """Test creating a fillup from scratch"""
-        fillup = LubeloggerFillup(**self.fillup_data)
-        self.assertEqual(fillup.date, "2024-01-15")
-        self.assertEqual(fillup.odometer, 150000)
-        self.assertEqual(fillup.fuel_consumed, 45.5)
-        self.assertEqual(fillup.cost, 75.25)
-        self.assertTrue(fillup.is_fill_to_full)
-        self.assertFalse(fillup.missed_fuel_up)
-        self.assertEqual(fillup.notes, "Test fillup")
+    def test_fuel_record_creation(self):
+        """Test creating a fuel record from scratch"""
+        fuel_record = LubeLoggerFuelRecord(**self.fuel_record_data)
+        self.assertEqual(fuel_record.date, "2024-01-15")
+        self.assertEqual(fuel_record.odometer, 150000)
+        self.assertEqual(fuel_record.fuel_consumed, 45.5)
+        self.assertEqual(fuel_record.cost, 75.25)
+        self.assertTrue(fuel_record.is_fill_to_full)
+        self.assertFalse(fuel_record.missed_fuel_up)
+        self.assertEqual(fuel_record.notes, "Test fuel record")
 
-    def test_fillup_to_dict(self):
-        """Test converting fillup to dictionary"""
-        fillup = LubeloggerFillup(**self.fillup_data)
-        result = fillup.to_dict()
+    def test_fuel_record_to_dict(self):
+        """Test converting fuel record to dictionary"""
+        fuel_record = LubeLoggerFuelRecord(**self.fuel_record_data)
+        result = fuel_record.to_dict()
 
         self.assertIsInstance(result, dict)
         self.assertEqual(result["date"], "2024-01-15")
         self.assertEqual(result["odometer"], 150000)
         self.assertEqual(result["fuel_consumed"], 45.5)
 
-    def test_fillup_to_api_dict(self):
-        """Test converting fillup to API format (camelCase, ignored keys removed)"""
-        fillup = LubeloggerFillup(**self.fillup_data)
-        api_dict = fillup.to_api_dict()
+    def test_fuel_record_to_api_dict(self):
+        """Test converting fuel record to API format (camelCase, ignored keys removed)"""
+        fuel_record = LubeLoggerFuelRecord(**self.fuel_record_data)
+        api_dict = fuel_record.to_api_dict()
 
         # Check camelCase conversion
         self.assertIn("fuelConsumed", api_dict)
@@ -83,7 +83,7 @@ class TestLubeloggerFillup(unittest.TestCase):
         self.assertEqual(api_dict["missedFuelUp"], False)
 
         # Check ignored keys are removed
-        for key in FILLUP_EXCLUDE_KEYS:
+        for key in FUEL_RECORD_EXCLUDE_KEYS:
             camel_key = key
             # Convert to camelCase for checking
             if "_" in key:
@@ -92,25 +92,25 @@ class TestLubeloggerFillup(unittest.TestCase):
             self.assertNotIn(camel_key, api_dict)
             self.assertNotIn(key, api_dict)
 
-    def test_fillup_from_api_response(self):
-        """Test creating fillup from API response"""
-        fillup = LubeloggerFillup.from_api_response(self.api_response_data)
+    def test_fuel_record_from_api_response(self):
+        """Test creating fuel record from API response"""
+        fuel_record = LubeLoggerFuelRecord.from_api_response(self.api_response_data)
 
-        self.assertEqual(fillup.date, "2024-01-15")
-        self.assertEqual(fillup.odometer, 150000)
-        self.assertEqual(fillup.fuel_consumed, 45.5)
-        self.assertEqual(fillup.cost, 75.25)
-        self.assertTrue(fillup.is_fill_to_full)
-        self.assertFalse(fillup.missed_fuel_up)
-        self.assertEqual(fillup.id, 123)
-        self.assertEqual(fillup.fuel_economy, 6.5)
-        self.assertEqual(fillup.notes, "Test fillup")
-        self.assertEqual(fillup.tags, "highway")
+        self.assertEqual(fuel_record.date, "2024-01-15")
+        self.assertEqual(fuel_record.odometer, 150000)
+        self.assertEqual(fuel_record.fuel_consumed, 45.5)
+        self.assertEqual(fuel_record.cost, 75.25)
+        self.assertTrue(fuel_record.is_fill_to_full)
+        self.assertFalse(fuel_record.missed_fuel_up)
+        self.assertEqual(fuel_record.id, 123)
+        self.assertEqual(fuel_record.fuel_economy, 6.5)
+        self.assertEqual(fuel_record.notes, "Test fuel record")
+        self.assertEqual(fuel_record.tags, "highway")
 
-    def test_fillup_round_trip_conversion(self):
-        """Test that API response -> fillup -> API dict preserves data (excluding ignored keys)"""
-        fillup = LubeloggerFillup.from_api_response(self.api_response_data)
-        api_dict = fillup.to_api_dict()
+    def test_fuel_record_round_trip_conversion(self):
+        """Test that API response -> fuel record -> API dict preserves data (excluding ignored keys)"""
+        fuel_record = LubeLoggerFuelRecord.from_api_response(self.api_response_data)
+        api_dict = fuel_record.to_api_dict()
 
         # Check that non-ignored fields are preserved
         self.assertEqual(api_dict["date"], self.api_response_data["date"])
@@ -126,9 +126,9 @@ class TestLubeloggerFillup(unittest.TestCase):
             api_dict["missedFuelUp"], self.api_response_data["missedFuelUp"]
         )
 
-    def test_fillup_default_values(self):
+    def test_fuel_record_default_values(self):
         """Test that default values are set correctly"""
-        minimal_fillup = LubeloggerFillup(
+        minimal_fuel_record = LubeLoggerFuelRecord(
             date="2024-01-15",
             odometer=150000,
             fuel_consumed=45.5,
@@ -137,16 +137,16 @@ class TestLubeloggerFillup(unittest.TestCase):
             missed_fuel_up=False,
         )
 
-        self.assertIsNone(minimal_fillup.id)
-        self.assertEqual(minimal_fillup.fuel_economy, 0)
-        self.assertEqual(minimal_fillup.notes, "")
-        self.assertEqual(minimal_fillup.tags, "")
-        self.assertEqual(minimal_fillup.extra_fields, [])
-        self.assertEqual(minimal_fillup.files, [])
+        self.assertIsNone(minimal_fuel_record.id)
+        self.assertEqual(minimal_fuel_record.fuel_economy, 0)
+        self.assertEqual(minimal_fuel_record.notes, "")
+        self.assertEqual(minimal_fuel_record.tags, "")
+        self.assertEqual(minimal_fuel_record.extra_fields, [])
+        self.assertEqual(minimal_fuel_record.files, [])
 
 
-class TestLubeloggerVehicleInfo(unittest.TestCase):
-    """Test LubeloggerVehicleInfo dataclass"""
+class TestLubeLoggerVehicleInfo(unittest.TestCase):
+    """Test LubeLoggerVehicleInfo dataclass"""
 
     def setUp(self):
         """Set up test data"""
@@ -185,7 +185,7 @@ class TestLubeloggerVehicleInfo(unittest.TestCase):
 
     def test_vehicle_creation(self):
         """Test creating a vehicle from scratch"""
-        vehicle = LubeloggerVehicleInfo(**self.vehicle_data)
+        vehicle = LubeLoggerVehicleInfo(**self.vehicle_data)
         self.assertEqual(vehicle.id, 1)
         self.assertEqual(vehicle.year, 2018)
         self.assertEqual(vehicle.make, "Toyota")
@@ -194,7 +194,7 @@ class TestLubeloggerVehicleInfo(unittest.TestCase):
 
     def test_vehicle_to_dict(self):
         """Test converting vehicle to dictionary"""
-        vehicle = LubeloggerVehicleInfo(**self.vehicle_data)
+        vehicle = LubeLoggerVehicleInfo(**self.vehicle_data)
         result = vehicle.to_dict()
 
         self.assertIsInstance(result, dict)
@@ -206,7 +206,7 @@ class TestLubeloggerVehicleInfo(unittest.TestCase):
 
     def test_vehicle_from_api_response(self):
         """Test creating vehicle from API response"""
-        vehicle = LubeloggerVehicleInfo.from_api_response(self.api_response_data)
+        vehicle = LubeLoggerVehicleInfo.from_api_response(self.api_response_data)
 
         self.assertEqual(vehicle.id, 1)
         self.assertEqual(vehicle.year, 2018)
@@ -223,7 +223,7 @@ class TestLubeloggerVehicleInfo(unittest.TestCase):
 
     def test_vehicle_round_trip_conversion(self):
         """Test that API response -> vehicle -> dict preserves data"""
-        vehicle = LubeloggerVehicleInfo.from_api_response(self.api_response_data)
+        vehicle = LubeLoggerVehicleInfo.from_api_response(self.api_response_data)
         result_dict = vehicle.to_dict()
 
         # Check that fields are preserved (in snake_case)
@@ -250,7 +250,7 @@ class TestLubeloggerVehicleInfo(unittest.TestCase):
 
     def test_vehicle_default_values(self):
         """Test that default values are set correctly"""
-        minimal_vehicle = LubeloggerVehicleInfo(
+        minimal_vehicle = LubeLoggerVehicleInfo(
             id=1,
             year=2018,
             make="Toyota",

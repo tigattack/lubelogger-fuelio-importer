@@ -1,4 +1,4 @@
-"""Script to import Fuelio fillups into Lubelogger"""
+"""Script to import Fuelio fuel records into LubeLogger"""
 
 import logging
 import sys
@@ -7,12 +7,12 @@ from cli import parse_args, setup_logging
 from config import load_config
 from exceptions import ConfigError
 from fuelio import FuelioClient
-from lubelogger import Lubelogger
+from lubelogger import LubeLogger
 from service import SyncService
 
 
 def main():
-    """Main entry point for Fuelio to Lubelogger sync"""
+    """Main entry point for Fuelio to LubeLogger sync"""
     args = parse_args()
 
     # Load configuration
@@ -27,11 +27,11 @@ def main():
     setup_logging(log_level)
 
     logger = logging.getLogger(__name__)
-    logger.info("Starting Fuelio to Lubelogger sync")
+    logger.info("Starting Fuelio to LubeLogger sync")
 
     # Initialise clients
     fuelio_client = FuelioClient(config.credentials_file_path)
-    lubelogger_client = Lubelogger(
+    lubelogger_client = LubeLogger(
         config.lubelogger_url,
         config.lubelogger_username,
         config.lubelogger_password,
@@ -50,7 +50,7 @@ def main():
             )
         except Exception as e:
             logger.error(
-                "Failed to sync vehicle (Fuelio ID: %d, Lubelogger ID: %d): %s",
+                "Failed to sync vehicle (Fuelio ID: %d, LubeLogger ID: %d): %s",
                 vehicle.fuelio_id,
                 vehicle.lubelogger_id,
                 e,

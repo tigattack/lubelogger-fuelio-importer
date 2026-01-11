@@ -10,7 +10,7 @@ from unittest.mock import Mock, patch
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from exceptions import FuelioDataError
-from fuelio import FuelioClient, FuelioFields, FuelioFillup
+from fuelio import FuelioClient, FuelioFields, FuelioFuelRecord
 
 
 class TestFuelioFields(unittest.TestCase):
@@ -30,11 +30,11 @@ class TestFuelioFields(unittest.TestCase):
         self.assertEqual(FuelioFields.FUEL_TYPE, 11)
 
 
-class TestFuelioFillup(unittest.TestCase):
-    """Tests for FuelioFillup dataclass"""
+class TestFuelioFuelRecord(unittest.TestCase):
+    """Tests for FuelioFuelRecord dataclass"""
 
     def test_from_csv_row(self):
-        """Test creating FuelioFillup from CSV row"""
+        """Test creating FuelioFuelRecord from CSV row"""
         # Based on actual Fuelio CSV structure from fuelio_backup_sample.csv
         row = {
             "## Vehicle": "2024-03-10 16:01",
@@ -59,19 +59,19 @@ class TestFuelioFillup(unittest.TestCase):
             ],
         }
 
-        fillup = FuelioFillup.from_csv_row(row)  # type: ignore
+        fuel_record = FuelioFuelRecord.from_csv_row(row)  # type: ignore
 
-        self.assertEqual(fillup.datetime, datetime(2024, 3, 10, 16, 1))
-        self.assertEqual(fillup.odometer, 212477.0)
-        self.assertEqual(fillup.fuel_consumed, 46.301)
-        self.assertEqual(fillup.cost, 67.09)
-        self.assertTrue(fillup.is_full)
-        self.assertFalse(fillup.missed)
-        self.assertEqual(fillup.latitude, "51.16514")
-        self.assertEqual(fillup.longitude, "-2.99017")
-        self.assertEqual(fillup.station, "Somerset - Sun all Service Station")
-        self.assertEqual(fillup.notes, "Test notes")
-        self.assertEqual(fillup.fuel_type, -1)
+        self.assertEqual(fuel_record.datetime, datetime(2024, 3, 10, 16, 1))
+        self.assertEqual(fuel_record.odometer, 212477.0)
+        self.assertEqual(fuel_record.fuel_consumed, 46.301)
+        self.assertEqual(fuel_record.cost, 67.09)
+        self.assertTrue(fuel_record.is_full)
+        self.assertFalse(fuel_record.missed)
+        self.assertEqual(fuel_record.latitude, "51.16514")
+        self.assertEqual(fuel_record.longitude, "-2.99017")
+        self.assertEqual(fuel_record.station, "Somerset - Sun all Service Station")
+        self.assertEqual(fuel_record.notes, "Test notes")
+        self.assertEqual(fuel_record.fuel_type, -1)
 
 
 class TestFuelioClient(unittest.TestCase):
@@ -97,8 +97,8 @@ class TestFuelioClient(unittest.TestCase):
             client = FuelioClient("/path/to/creds.json")
             self.assertEqual(client.get_fuel_type_name(9999), "Unknown")
 
-    def test_fetch_fillups_no_backup(self):
-        """Test fetch_fillups raises error when no backup found"""
+    def test_fetch_fuel_records_no_backup(self):
+        """Test fetch_fuel_records raises error when no backup found"""
         with patch("fuelio.GDrive") as mock_gdrive:
             mock_drive_instance = Mock()
             mock_drive_instance.find_file.return_value = []
@@ -107,18 +107,18 @@ class TestFuelioClient(unittest.TestCase):
             client = FuelioClient("/path/to/creds.json")
 
             with self.assertRaisesRegex(FuelioDataError, "No backup found"):
-                client.fetch_fillups("folder123", 1)
+                client.fetch_fuel_records("folder123", 1)
 
     def test_parse_csv(self):
-        """Test parsing CSV data to filter fillups"""
+        """Test parsing CSV data to filter fuel records"""
         with patch("fuelio.GDrive"):
             client = FuelioClient("/path/to/creds.json")
 
             # Based on actual Fuelio CSV structure
             csv_data = [
-                # Header row (not a fillup)
+                # Header row (not a fuel record)
                 {"## Vehicle": "Data", None: ["Odo (mi)", "Fuel (litres)", "Full"]},
-                # Valid fillup with complete data
+                # Valid fuel record with complete data
                 {
                     "## Vehicle": "2024-03-10 16:01",
                     None: [
@@ -143,7 +143,7 @@ class TestFuelioClient(unittest.TestCase):
                 },
                 # Another header-like row (section separator)
                 {"## Vehicle": "## CostCategories", None: []},
-                # Another valid fillup
+                # Another valid fuel record
                 {
                     "## Vehicle": "2024-03-11 10:30",
                     None: [
@@ -168,15 +168,17 @@ class TestFuelioClient(unittest.TestCase):
                 },
             ]
 
-            fillups = client._parse_csv(csv_data)  # type: ignore
+            fuel_records = client._parse_csv(csv_data)  # type: ignore
 
-            self.assertEqual(len(fillups), 2)
-            self.assertEqual(fillups[0].odometer, 212477.0)
-            self.assertEqual(fillups[0].fuel_consumed, 46.301)
-            self.assertEqual(fillups[0].station, "Somerset - Sun all Service Station")
-            self.assertEqual(fillups[1].odometer, 212523.5)
-            self.assertEqual(fillups[1].fuel_consumed, 40.0)
-            self.assertEqual(fillups[1].notes, "Highway fill")
+            self.assertEqual(len(fuel_records), 2)
+            self.assertEqual(fuel_records[0].odometer, 212477.0)
+            self.assertEqual(fuel_records[0].fuel_consumed, 46.301)
+            self.assertEqual(
+                fuel_records[0].station, "Somerset - Sun all Service Station"
+            )
+            self.assertEqual(fuel_records[1].odometer, 212523.5)
+            self.assertEqual(fuel_records[1].fuel_consumed, 40.0)
+            self.assertEqual(fuel_records[1].notes, "Highway fill")
 
 
 if __name__ == "__main__":

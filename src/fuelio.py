@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     )
 
 
-# CSV field indices for Fuelio fillup data
+# CSV field indices for Fuelio fuel record data
 # Based on Fuelio export format: Data, Odo, Fuel, Full, Price, mpg, lat, lon, City, Notes, Missed, TankNumber, FuelType, etc.
 class FuelioFields:
     """Field indices for Fuelio CSV export"""
@@ -38,8 +38,8 @@ class FuelioFields:
 
 
 @dataclass
-class FuelioFillup:
-    """Represents a Fuelio fillup record"""
+class FuelioFuelRecord:
+    """Represents a Fuelio fuel record"""
 
     datetime: datetime
     odometer: float
@@ -54,17 +54,17 @@ class FuelioFillup:
     fuel_type: int
 
     @classmethod
-    def from_csv_row(cls, row: dict[str, Any]) -> "FuelioFillup":
-        """Create FuelioFillup from CSV row"""
+    def from_csv_row(cls, row: dict[str, Any]) -> "FuelioFuelRecord":
+        """Create FuelioFuelRecord from CSV row"""
         # The datetime is in the ## Vehicle column
-        fillup_datetime = datetime.strptime(row["## Vehicle"], "%Y-%m-%d %H:%M")
+        fuel_record_datetime = datetime.strptime(row["## Vehicle"], "%Y-%m-%d %H:%M")
 
         # All other fields are in unnamed columns accessed via None key
         # Type checker doesn't understand csv.DictReader's None key pattern
         fields = row[None]  # type: ignore[index]
 
         return cls(
-            datetime=fillup_datetime,
+            datetime=fuel_record_datetime,
             odometer=float(fields[FuelioFields.ODOMETER]),
             fuel_consumed=float(fields[FuelioFields.FUEL_CONSUMED]),
             cost=float(fields[FuelioFields.COST]),
@@ -115,8 +115,10 @@ class FuelioClient:
         """Get fuel type name from ID"""
         return self.FUEL_TYPES.get(fuel_type_id, self.FUEL_TYPES[-1])
 
-    def fetch_fillups(self, folder_id: str, vehicle_id: int) -> list[FuelioFillup]:
-        """Fetch Fuelio fillup data for given vehicle ID"""
+    def fetch_fuel_records(
+        self, folder_id: str, vehicle_id: int
+    ) -> list[FuelioFuelRecord]:
+        """Fetch Fuelio fuel record data for given vehicle ID"""
         csv_filename = f"vehicle-{vehicle_id}-sync.csv"
         zip_filename = f"{csv_filename}.zip"
 
@@ -147,10 +149,10 @@ class FuelioClient:
         csv_data = self._extract_csv_from_backup(backup, csv_filename)
 
         # Parse CSV
-        fillups = self._parse_csv(csv_data)
+        fuel_records = self._parse_csv(csv_data)
 
-        self.logger.info("Loaded %d fillup records from Fuelio backup", len(fillups))
-        return fillups
+        self.logger.info("Loaded %d fuel records from Fuelio backup", len(fuel_records))
+        return fuel_records
 
     def _extract_csv_from_backup(
         self, backup: File, csv_filename: str
@@ -188,20 +190,20 @@ class FuelioClient:
                 reader = csv.DictReader(csv_file)
                 return list(reader)
 
-    def _parse_csv(self, csv_data: list[dict[str, Any]]) -> list[FuelioFillup]:
-        """Parse Fuelio CSV data and filter to only fillup records
+    def _parse_csv(self, csv_data: list[dict[str, Any]]) -> list[FuelioFuelRecord]:
+        """Parse Fuelio CSV data and filter to only fuel records
 
-        Fuelio CSV contains multiple sections. Fillup records have a datetime
+        Fuelio CSV contains multiple sections. Fuel records have a datetime
         in the '## Vehicle' column (format: YYYY-MM-DD HH:MM).
         """
-        fillups: list[FuelioFillup] = []
+        fuel_records: list[FuelioFuelRecord] = []
         for row in csv_data:
             try:
-                # Try to parse as datetime - this identifies fillup records
+                # Try to parse as datetime - this identifies fuel records
                 datetime.strptime(row["## Vehicle"], "%Y-%m-%d %H:%M")
-                fillups.append(FuelioFillup.from_csv_row(row))
+                fuel_records.append(FuelioFuelRecord.from_csv_row(row))
             except (ValueError, KeyError):
-                # Not a fillup record (header or other section)
+                # Not a fuel record (header or other section)
                 continue
 
-        return fillups
+        return fuel_records

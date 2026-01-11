@@ -24,7 +24,7 @@ def setup_logging(log_level: str) -> None:
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(
-        description="Import Fuelio fillups into Lubelogger"
+        description="Import Fuelio fuel records into Lubelogger"
     )
     parser.add_argument(
         "config_dir",

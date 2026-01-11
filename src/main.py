@@ -1,4 +1,4 @@
-"""Script to import Fuelio fillups into Lubelogger"""
+"""Script to import Fuelio fuel records into Lubelogger"""
 
 import logging
 import sys

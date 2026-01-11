@@ -9,8 +9,8 @@ from unittest.mock import Mock
 # Add src directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from fuelio import FuelioFillup
-from models import LubeloggerFillup
+from fuelio import FuelioFuelRecord
+from models import LubeloggerFuelRecord
 from service import SyncService
 
 
@@ -32,10 +32,10 @@ class TestSyncService(unittest.TestCase):
         self.assertFalse(self.service.dry_run)
 
     def test_convert_to_lubelogger(self):
-        """Test converting Fuelio fillup to Lubelogger format"""
+        """Test converting Fuelio fuel record to Lubelogger format"""
         self.mock_fuelio.get_fuel_type_name.return_value = "Petrol Regular"
 
-        fuelio_fill = FuelioFillup(
+        fuelio_fill = FuelioFuelRecord(
             datetime=datetime(2024, 1, 15, 14, 30),
             odometer=12345.6,
             fuel_consumed=45.5,
@@ -51,7 +51,7 @@ class TestSyncService(unittest.TestCase):
 
         result = self.service.convert_to_lubelogger(fuelio_fill)
 
-        self.assertIsInstance(result, LubeloggerFillup)
+        self.assertIsInstance(result, LubeloggerFuelRecord)
         self.assertEqual(result.date, "2024-01-15")
         self.assertEqual(result.odometer, 12345)
         self.assertEqual(result.fuel_consumed, 45.5)
@@ -62,9 +62,9 @@ class TestSyncService(unittest.TestCase):
         self.assertIn("Petrol Regular", result.notes)
         self.assertIn("Test notes", result.notes)
 
-    def test_fillup_to_comparable_dict(self):
-        """Test converting fillup to comparable dict"""
-        fillup = LubeloggerFillup(
+    def test_fuel_record_to_comparable_dict(self):
+        """Test converting fuel record to comparable dict"""
+        fuel_record = LubeloggerFuelRecord(
             date="2024-01-15",
             odometer=12345,
             fuel_consumed=45.5,
@@ -74,16 +74,16 @@ class TestSyncService(unittest.TestCase):
             notes="Test",
         )
 
-        result = SyncService.fillup_to_comparable_dict(fillup)
+        result = SyncService.fuel_record_to_comparable_dict(fuel_record)
 
-        # Should exclude FILLUP_EXCLUDE_KEYS
+        # Should exclude FUEL_RECORD_EXCLUDE_KEYS
         self.assertIsInstance(result, dict)
         self.assertIn("date", result)
         self.assertIn("odometer", result)
 
     def test_find_duplicate_found(self):
-        """Test finding duplicate fillup"""
-        new_fill = LubeloggerFillup(
+        """Test finding duplicate fuel record"""
+        new_fill = LubeloggerFuelRecord(
             date="2024-01-15",
             odometer=12345,
             fuel_consumed=45.5,
@@ -93,7 +93,7 @@ class TestSyncService(unittest.TestCase):
         )
 
         existing_fills = [
-            LubeloggerFillup(
+            LubeloggerFuelRecord(
                 date="2024-01-15",
                 odometer=12345,
                 fuel_consumed=45.0,  # Different amount
@@ -111,7 +111,7 @@ class TestSyncService(unittest.TestCase):
 
     def test_find_duplicate_not_found(self):
         """Test finding duplicate when none exists"""
-        new_fill = LubeloggerFillup(
+        new_fill = LubeloggerFuelRecord(
             date="2024-01-15",
             odometer=12345,
             fuel_consumed=45.5,
@@ -121,7 +121,7 @@ class TestSyncService(unittest.TestCase):
         )
 
         existing_fills = [
-            LubeloggerFillup(
+            LubeloggerFuelRecord(
                 date="2024-01-16",  # Different date
                 odometer=12400,  # Different odometer
                 fuel_consumed=45.0,
@@ -146,7 +146,7 @@ class TestSyncService(unittest.TestCase):
         self.mock_lubelogger.get_vehicle_info.return_value = mock_vehicle
 
         # Mock Fuelio data
-        fuelio_fill = FuelioFillup(
+        fuelio_fill = FuelioFuelRecord(
             datetime=datetime(2024, 1, 15, 14, 30),
             odometer=12345.0,
             fuel_consumed=45.5,
@@ -159,11 +159,11 @@ class TestSyncService(unittest.TestCase):
             notes="",
             fuel_type=110,
         )
-        self.mock_fuelio.fetch_fillups.return_value = [fuelio_fill]
+        self.mock_fuelio.fetch_fuel_records.return_value = [fuelio_fill]
         self.mock_fuelio.get_fuel_type_name.return_value = "Petrol Regular"
 
-        # Mock Lubelogger fillups (empty)
-        self.mock_lubelogger.get_fillups.return_value = []
+        # Mock Lubelogger fuel records (empty)
+        self.mock_lubelogger.get_fuel_records.return_value = []
 
         # Run sync
         self.service.sync_vehicle(
@@ -172,9 +172,9 @@ class TestSyncService(unittest.TestCase):
 
         # Verify calls
         self.mock_lubelogger.get_vehicle_info.assert_called_once_with(2)
-        self.mock_fuelio.fetch_fillups.assert_called_once_with("folder123", 1)
-        self.mock_lubelogger.get_fillups.assert_called_once_with(2)
-        self.mock_lubelogger.add_fillup.assert_called_once()
+        self.mock_fuelio.fetch_fuel_records.assert_called_once_with("folder123", 1)
+        self.mock_lubelogger.get_fuel_records.assert_called_once_with(2)
+        self.mock_lubelogger.add_fuel_record.assert_called_once()
 
     def test_sync_vehicle_dry_run(self):
         """Test vehicle sync in dry run mode"""
@@ -188,7 +188,7 @@ class TestSyncService(unittest.TestCase):
         mock_vehicle.license_plate = "ABC123"
         self.mock_lubelogger.get_vehicle_info.return_value = mock_vehicle
 
-        fuelio_fill = FuelioFillup(
+        fuelio_fill = FuelioFuelRecord(
             datetime=datetime(2024, 1, 15, 14, 30),
             odometer=12345.0,
             fuel_consumed=45.5,
@@ -201,17 +201,17 @@ class TestSyncService(unittest.TestCase):
             notes="",
             fuel_type=110,
         )
-        self.mock_fuelio.fetch_fillups.return_value = [fuelio_fill]
+        self.mock_fuelio.fetch_fuel_records.return_value = [fuelio_fill]
         self.mock_fuelio.get_fuel_type_name.return_value = "Petrol Regular"
-        self.mock_lubelogger.get_fillups.return_value = []
+        self.mock_lubelogger.get_fuel_records.return_value = []
 
         # Run sync
         service.sync_vehicle(
             fuelio_vehicle_id=1, lubelogger_vehicle_id=2, drive_folder_id="folder123"
         )
 
-        # Verify add_fillup was NOT called in dry run
-        self.mock_lubelogger.add_fillup.assert_not_called()
+        # Verify add_fuel_record was NOT called in dry run
+        self.mock_lubelogger.add_fuel_record.assert_not_called()
 
 
 if __name__ == "__main__":

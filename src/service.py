@@ -10,10 +10,10 @@ from pygments import highlight  # type: ignore[import-untyped]
 from pygments.formatters import Terminal256Formatter
 from pygments.lexers import PythonLexer  # type: ignore[import-untyped]
 
-from fuelio import FuelioClient, FuelioFillup
+from fuelio import FuelioClient, FuelioFuelRecord
 from lubelogger import Lubelogger
 from exceptions import FuelioDataError, LubeloggerAPIError
-from models import FILLUP_EXCLUDE_KEYS, LubeloggerFillup
+from models import FUEL_RECORD_EXCLUDE_KEYS, LubeloggerFuelRecord
 
 
 def pprint_colour(obj: Any) -> None:
@@ -39,43 +39,49 @@ class SyncService:
         self.dry_run = dry_run
         self.logger = logging.getLogger(__name__)
 
-    def convert_to_lubelogger(self, fillup: FuelioFillup) -> LubeloggerFillup:
-        """Convert Fuelio fillup to Lubelogger format"""
-        # Build notes with structured information
-        fuel_type_name = self.fuelio.get_fuel_type_name(fillup.fuel_type)
+    def convert_to_lubelogger(
+        self, fuel_record: FuelioFuelRecord
+    ) -> LubeloggerFuelRecord:
+        """Convert Fuelio fuel record to Lubelogger format"""
+        # Build notes with structured information from Fuelio record
+        fuel_type_name = self.fuelio.get_fuel_type_name(fuel_record.fuel_type)
 
-        fillup_notes = dedent(
+        fuel_record_notes = dedent(
             f"""
-            * Fuel station: {fillup.station}
-            * Location: [{fillup.latitude},{fillup.longitude}](https://www.google.com/maps/place/{fillup.latitude},{fillup.longitude})
-            * Time: {fillup.datetime.strftime("%H:%M")}
+            * Fuel station: {fuel_record.station}
+            * Location: [{fuel_record.latitude},{fuel_record.longitude}](https://www.google.com/maps/place/{fuel_record.latitude},{fuel_record.longitude})
+            * Time: {fuel_record.datetime.strftime("%H:%M")}
             * Fuel type: {fuel_type_name}"""
         ).strip()
 
-        if fillup.notes:
-            fillup_notes += f"\n\n###### Fuelio notes:\n\n{fillup.notes}"
+        if fuel_record.notes:
+            fuel_record_notes += f"\n\n###### Fuelio notes:\n\n{fuel_record.notes}"
 
-        return LubeloggerFillup(
-            date=fillup.datetime.strftime("%Y-%m-%d"),
-            odometer=int(fillup.odometer),
-            fuel_consumed=fillup.fuel_consumed,
-            cost=fillup.cost,
-            is_fill_to_full=fillup.is_full,
-            missed_fuel_up=fillup.missed,
-            notes=fillup_notes,
+        return LubeloggerFuelRecord(
+            date=fuel_record.datetime.strftime("%Y-%m-%d"),
+            odometer=int(fuel_record.odometer),
+            fuel_consumed=fuel_record.fuel_consumed,
+            cost=fuel_record.cost,
+            is_fill_to_full=fuel_record.is_full,
+            missed_fuel_up=fuel_record.missed,
+            notes=fuel_record_notes,
         )
 
     @staticmethod
-    def fillup_to_comparable_dict(fillup: LubeloggerFillup) -> dict[str, Any]:
-        """Convert fillup to dict excluding ignored keys for comparison"""
+    def fuel_record_to_comparable_dict(
+        fuel_record: LubeloggerFuelRecord,
+    ) -> dict[str, Any]:
+        """Convert fuel record to dict excluding ignored keys for comparison"""
         return {
-            k: v for k, v in fillup.to_dict().items() if k not in FILLUP_EXCLUDE_KEYS
+            k: v
+            for k, v in fuel_record.to_dict().items()
+            if k not in FUEL_RECORD_EXCLUDE_KEYS
         }
 
     def find_duplicate(
-        self, new_fill: LubeloggerFillup, existing_fills: list[LubeloggerFillup]
+        self, new_fill: LubeloggerFuelRecord, existing_fills: list[LubeloggerFuelRecord]
     ) -> dict[str, Any] | None:
-        """Find duplicate fillup by date and odometer"""
+        """Find duplicate fuel record by date and odometer"""
         return next(
             (
                 fill.to_dict()
@@ -86,11 +92,11 @@ class SyncService:
         )
 
     def log_duplicate_differences(
-        self, new_fill: LubeloggerFillup, existing_fill: dict[str, Any]
+        self, new_fill: LubeloggerFuelRecord, existing_fill: dict[str, Any]
     ) -> None:
-        """Log differences between new and existing fillup"""
+        """Log differences between new and existing fuel record"""
         self.logger.warning(
-            "Found existing fillup on %s with different attributes. "
+            "Found existing fuel record on %s with different attributes. "
             "This is likely a duplicate and the relevant attributes will need to be manually patched.",
             new_fill.date,
         )
@@ -105,7 +111,7 @@ class SyncService:
         # Log each differing field (excluding ignored keys)
         for key, new_value in new_fill.to_dict().items():
             if (
-                key not in FILLUP_EXCLUDE_KEYS
+                key not in FUEL_RECORD_EXCLUDE_KEYS
                 and key in existing_fill
                 and new_value != existing_fill[key]
             ):
@@ -121,7 +127,7 @@ class SyncService:
     def sync_vehicle(
         self, fuelio_vehicle_id: int, lubelogger_vehicle_id: int, drive_folder_id: str
     ) -> None:
-        """Sync fillups for a single vehicle"""
+        """Sync fuel records for a single vehicle"""
         self.logger.info(
             "SYNCING LUBELOGGER VEHICLE %d ← FUELIO VEHICLE %d",
             lubelogger_vehicle_id,
@@ -153,42 +159,46 @@ class SyncService:
         # Fetch Fuelio data
         self.logger.debug("Fetching Fuelio backup data")
         try:
-            fuelio_fills = self.fuelio.fetch_fillups(drive_folder_id, fuelio_vehicle_id)
+            fuelio_fills = self.fuelio.fetch_fuel_records(
+                drive_folder_id, fuelio_vehicle_id
+            )
         except FuelioDataError as e:
             self.logger.error("Failed to fetch Fuelio data: %s", e)
             return
 
         if not fuelio_fills:
-            self.logger.warning("No fuel fillups found in Fuelio backup!")
+            self.logger.warning("No fuel records found in Fuelio backup!")
             return
 
-        # Fetch Lubelogger fillups
-        self.logger.debug("Fetching Lubelogger fillups")
+        # Fetch Lubelogger fuel records
+        self.logger.debug("Fetching Lubelogger fuel records")
         try:
-            lubelogger_fills = self.lubelogger.get_fillups(lubelogger_vehicle_id)
+            lubelogger_fills = self.lubelogger.get_fuel_records(lubelogger_vehicle_id)
         except LubeloggerAPIError as e:
             self.logger.error(
-                "Failed to fetch fillups for Lubelogger vehicle with ID %d: %s",
+                "Failed to fetch fuel records for Lubelogger vehicle with ID %d: %s",
                 lubelogger_vehicle_id,
                 e,
             )
             return
 
         self.logger.info(
-            "Found %d fillups in Lubelogger",
+            "Found %d fuel records in Lubelogger",
             len(lubelogger_fills),
         )
 
-        # Process fillups
-        self._process_fillups(fuelio_fills, lubelogger_fills, lubelogger_vehicle_id)
+        # Process fuel records
+        self._process_fuel_records(
+            fuelio_fills, lubelogger_fills, lubelogger_vehicle_id
+        )
 
-    def _process_fillups(
+    def _process_fuel_records(
         self,
-        fuelio_fills: list[FuelioFillup],
-        lubelogger_fills: list[LubeloggerFillup],
+        fuelio_fills: list[FuelioFuelRecord],
+        lubelogger_fills: list[LubeloggerFuelRecord],
         vehicle_id: int,
     ) -> None:
-        """Process and sync fillups"""
+        """Process and sync fuel records"""
         added_count = 0
 
         # Process in reverse order (oldest first)
@@ -197,9 +207,9 @@ class SyncService:
             new_fill = self.convert_to_lubelogger(fuelio_fill)
 
             # Check if already exists with matching attributes
-            new_fill_comparable = self.fillup_to_comparable_dict(new_fill)
+            new_fill_comparable = self.fuel_record_to_comparable_dict(new_fill)
             if any(
-                self.fillup_to_comparable_dict(existing) == new_fill_comparable
+                self.fuel_record_to_comparable_dict(existing) == new_fill_comparable
                 for existing in lubelogger_fills
             ):
                 # Already exists, skip
@@ -211,19 +221,19 @@ class SyncService:
                 self.log_duplicate_differences(new_fill, duplicate)
                 continue
 
-            # Add new fillup
+            # Add new fuel record
             if not self.dry_run:
-                self.logger.info("Adding fuel fillup from %s", new_fill.date)
+                self.logger.info("Adding fuel record from %s", new_fill.date)
                 try:
-                    self.lubelogger.add_fillup(vehicle_id, new_fill)
+                    self.lubelogger.add_fuel_record(vehicle_id, new_fill)
                     added_count += 1
                 except LubeloggerAPIError as e:
                     self.logger.error(
-                        "Failed to add fillup from %s: %s", new_fill.date, e
+                        "Failed to add fuel record from %s: %s", new_fill.date, e
                     )
             else:
                 self.logger.info(
-                    "Dry run: Would add fuel fillup from %s", new_fill.date
+                    "Dry run: Would add fuel record from %s", new_fill.date
                 )
                 added_count += 1
 
@@ -231,4 +241,4 @@ class SyncService:
             self.logger.info("Nothing to add, Lubelogger fuel logs are up to date!")
         else:
             action = "Would add" if self.dry_run else "Added"
-            self.logger.info("%s %d fillup(s)", action, added_count)
+            self.logger.info("%s %d fuel record(s)", action, added_count)

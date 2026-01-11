@@ -40,6 +40,32 @@ class FuelioFields:
     FUEL_TYPE = 11
 
 
+# Fuelio fuel type ID to name mapping
+FUEL_TYPES = {
+    -1: "Unknown",
+    0: "Unset",
+    110: "Petrol Regular",
+    112: "Petrol Super",
+    113: "Petrol Ultimate",
+    114: "Petrol Racing",
+    119: "Petrol E10",
+    201: "Diesel Regular",
+    202: "Diesel Plus",
+    209: "Biodiesel B20",
+    211: "Biodiesel",
+    217: "Diesel Adblue",
+    218: "Biodiesel B10",
+    219: "Biodiesel B30",
+    305: "E85",
+    401: "LPG",
+    501: "CNG",
+    502: "CBG",
+    503: "Biogas",
+    601: "240V",
+    602: "DC 500 Fast Charge",
+}
+
+
 @dataclass
 class FuelioFuelRecord:
     """Represents a Fuelio fuel record"""
@@ -84,31 +110,6 @@ class FuelioFuelRecord:
 class FuelioClient:
     """Client for processing Fuelio backup data"""
 
-    # Fuelio fuel type ID to name mapping
-    FUEL_TYPES = {
-        -1: "Unknown",
-        0: "Unset",
-        110: "Petrol Regular",
-        112: "Petrol Super",
-        113: "Petrol Ultimate",
-        114: "Petrol Racing",
-        119: "Petrol E10",
-        201: "Diesel Regular",
-        202: "Diesel Plus",
-        209: "Biodiesel B20",
-        211: "Biodiesel",
-        217: "Diesel Adblue",
-        218: "Biodiesel B10",
-        219: "Biodiesel B30",
-        305: "E85",
-        401: "LPG",
-        501: "CNG",
-        502: "CBG",
-        503: "Biogas",
-        601: "240V",
-        602: "DC 500 Fast Charge",
-    }
-
     def __init__(self, credentials_file: str):
         """Initialise Fuelio client"""
         self.drive = GDrive(credentials_file)
@@ -116,7 +117,7 @@ class FuelioClient:
 
     def get_fuel_type_name(self, fuel_type_id: int) -> str:
         """Get fuel type name from ID"""
-        return self.FUEL_TYPES.get(fuel_type_id, self.FUEL_TYPES[-1])
+        return FUEL_TYPES.get(fuel_type_id, FUEL_TYPES[-1])
 
     def fetch_fuel_records(
         self, folder_id: str, vehicle_id: int

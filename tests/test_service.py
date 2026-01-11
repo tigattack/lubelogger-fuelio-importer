@@ -10,7 +10,12 @@ from unittest.mock import Mock
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from fuelio import FuelioFuelRecord
-from models import LubeLoggerFuelRecord
+from models import (
+    LubeLoggerAddFuelRecordResponse,
+    LubeLoggerFuelRecord,
+    LubeLoggerOdometerRecord,
+    LubeLoggerOdoRecalculateResponse,
+)
 from service import SyncService
 
 
@@ -165,6 +170,31 @@ class TestSyncService(unittest.TestCase):
         # Mock LubeLogger fuel records (empty)
         self.mock_lubelogger.get_fuel_records.return_value = []
 
+        # Mock add_fuel_record response
+        mock_response = LubeLoggerAddFuelRecordResponse(
+            success=True,
+            message="Gas Record Added",
+            additional_data={"recordId": 100},
+        )
+        self.mock_lubelogger.add_fuel_record.return_value = mock_response
+
+        # Mock odometer records with negative distance
+        mock_odo = LubeLoggerOdometerRecord(
+            id=1,
+            date="2024-01-15",
+            initial_odometer=15000,  # Higher than odometer - negative distance!
+            odometer=12345,
+            notes="",
+            tags="",
+        )
+        self.mock_lubelogger.get_odometer_records.return_value = [mock_odo]
+
+        # Mock recalculate response
+        mock_recalc = LubeLoggerOdoRecalculateResponse(
+            success=True, message="Odometer Records Adjusted(1)"
+        )
+        self.mock_lubelogger.recalculate_odometer_records.return_value = mock_recalc
+
         # Run sync
         self.service.sync_vehicle(
             fuelio_vehicle_id=1, lubelogger_vehicle_id=2, drive_folder_id="folder123"
@@ -175,6 +205,9 @@ class TestSyncService(unittest.TestCase):
         self.mock_fuelio.fetch_fuel_records.assert_called_once_with("folder123", 1)
         self.mock_lubelogger.get_fuel_records.assert_called_once_with(2)
         self.mock_lubelogger.add_fuel_record.assert_called_once()
+        # Verify recalculate was called after adding fuel record
+        self.mock_lubelogger.get_odometer_records.assert_called_once_with(2)
+        self.mock_lubelogger.recalculate_odometer_records.assert_called_once_with(2)
 
     def test_sync_vehicle_dry_run(self):
         """Test vehicle sync in dry run mode"""
@@ -212,6 +245,108 @@ class TestSyncService(unittest.TestCase):
 
         # Verify add_fuel_record was NOT called in dry run
         self.mock_lubelogger.add_fuel_record.assert_not_called()
+        # Verify recalculate was NOT called in dry run
+        self.mock_lubelogger.recalculate_odometer_records.assert_not_called()
+
+    def test_recalculate_with_negative_distances(self):
+        """Test that recalculate is called when negative distances are detected"""
+        # Mock odometer records with negative distance
+        mock_odo = LubeLoggerOdometerRecord(
+            id=1,
+            date="2024-01-15",
+            initial_odometer=15000,  # Higher than odometer - negative!
+            odometer=12345,
+            notes="",
+            tags="",
+        )
+        self.mock_lubelogger.get_odometer_records.return_value = [mock_odo]
+
+        # Mock recalculate response
+        mock_recalc = LubeLoggerOdoRecalculateResponse(
+            success=True, message="Odometer Records Adjusted(1)"
+        )
+        self.mock_lubelogger.recalculate_odometer_records.return_value = mock_recalc
+
+        # Call the method
+        self.service._recalculate_odometer_records(vehicle_id=1)
+
+        # Verify recalculate was called
+        self.mock_lubelogger.recalculate_odometer_records.assert_called_once_with(1)
+
+    def test_no_recalculate_without_negative_distances(self):
+        """Test that recalculate is NOT called when all distances are positive"""
+        # Mock odometer records with positive distances
+        mock_odo1 = LubeLoggerOdometerRecord(
+            id=1,
+            date="2024-01-15",
+            initial_odometer=12000,
+            odometer=12345,
+            notes="",
+            tags="",
+        )
+        mock_odo2 = LubeLoggerOdometerRecord(
+            id=2,
+            date="2024-01-16",
+            initial_odometer=12345,
+            odometer=12450,
+            notes="",
+            tags="",
+        )
+        self.mock_lubelogger.get_odometer_records.return_value = [mock_odo1, mock_odo2]
+
+        # Call the method
+        self.service._recalculate_odometer_records(vehicle_id=1)
+
+        # Verify recalculate was NOT called (no negative distances)
+        self.mock_lubelogger.recalculate_odometer_records.assert_not_called()
+
+    def test_recalculate_not_called_when_no_fuel_records_added(self):
+        """Test that recalculate is not called when no fuel records were added"""
+        # Mock vehicle info
+        mock_vehicle = Mock()
+        mock_vehicle.year = 2020
+        mock_vehicle.make = "Toyota"
+        mock_vehicle.model = "Camry"
+        mock_vehicle.license_plate = "ABC123"
+        self.mock_lubelogger.get_vehicle_info.return_value = mock_vehicle
+
+        # Mock Fuelio data - but it already exists in LubeLogger
+        fuelio_fill = FuelioFuelRecord(
+            datetime=datetime(2024, 1, 15, 14, 30),
+            odometer=12345.0,
+            fuel_consumed=45.5,
+            cost=75.50,
+            is_full=True,
+            missed=False,
+            latitude="51.5",
+            longitude="-0.1",
+            station="Shell",
+            notes="",
+            fuel_type=110,
+        )
+        self.mock_fuelio.fetch_fuel_records.return_value = [fuelio_fill]
+        self.mock_fuelio.get_fuel_type_name.return_value = "Petrol Regular"
+
+        # Mock LubeLogger - fuel record already exists
+        existing_fill = LubeLoggerFuelRecord(
+            date="2024-01-15",
+            odometer=12345,
+            fuel_consumed=45.5,
+            cost=75.50,
+            is_fill_to_full=True,
+            missed_fuel_up=False,
+            notes="* Fuel station: Shell\n* Location: [51.5,-0.1](https://www.google.com/maps/place/51.5,-0.1)\n* Time: 14:30\n* Fuel type: Petrol Regular",
+        )
+        self.mock_lubelogger.get_fuel_records.return_value = [existing_fill]
+
+        # Run sync
+        self.service.sync_vehicle(
+            fuelio_vehicle_id=1, lubelogger_vehicle_id=2, drive_folder_id="folder123"
+        )
+
+        # Verify recalculate was NOT called (no fuel records added)
+        self.mock_lubelogger.get_odometer_records.assert_not_called()
+        self.mock_lubelogger.recalculate_odometer_records.assert_not_called()
 
 
 if __name__ == "__main__":

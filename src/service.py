@@ -188,18 +188,26 @@ class SyncService:
         )
 
         # Process fuel records
-        self._process_fuel_records(
+        added_fuel_records = self._process_fuel_records(
             fuelio_fills, lubelogger_fills, lubelogger_vehicle_id
         )
+
+        # Recalculate odometer records if any fuel records were added
+        if len(added_fuel_records) > 0 and not self.dry_run:
+            self._recalculate_odometer_records(lubelogger_vehicle_id)
 
     def _process_fuel_records(
         self,
         fuelio_fills: list[FuelioFuelRecord],
         lubelogger_fills: list[LubeLoggerFuelRecord],
         vehicle_id: int,
-    ) -> None:
-        """Process and sync fuel records"""
-        added_count = 0
+    ) -> list[LubeLoggerFuelRecord]:
+        """Process and sync fuel records
+
+        Returns:
+            list[LubeLoggerFuelRecord]: List of added fuel records
+        """
+        added_fuel_records: list[LubeLoggerFuelRecord] = []
 
         # Process in reverse order (oldest first)
         for fuelio_fill in reversed(fuelio_fills):
@@ -226,7 +234,7 @@ class SyncService:
                 self.logger.info("Adding fuel record from %s", new_fill.date)
                 try:
                     self.lubelogger.add_fuel_record(vehicle_id, new_fill)
-                    added_count += 1
+                    added_fuel_records.append(new_fill)
                 except LubeLoggerAPIError as e:
                     self.logger.error(
                         "Failed to add fuel record from %s: %s", new_fill.date, e
@@ -235,10 +243,44 @@ class SyncService:
                 self.logger.info(
                     "Dry run: Would add fuel record from %s", new_fill.date
                 )
-                added_count += 1
+                added_fuel_records.append(new_fill)
 
-        if added_count == 0:
+        if not added_fuel_records:
             self.logger.info("Nothing to add, LubeLogger fuel logs are up to date!")
         else:
             action = "Would add" if self.dry_run else "Added"
-            self.logger.info("%s %d fuel record(s)", action, added_count)
+            self.logger.info("%s %d fuel record(s)", action, len(added_fuel_records))
+
+        return added_fuel_records
+
+    def _recalculate_odometer_records(self, vehicle_id: int) -> None:
+        """Recalculate odometer records if negative distances are detected"""
+        try:
+            # Fetch odometer records to check for negative distances
+            self.logger.debug("Checking for negative odometer distances")
+            odometer_records = self.lubelogger.get_odometer_records(vehicle_id)
+
+            # Check if any records have negative distances
+            has_negative = any(
+                (record.odometer - record.initial_odometer) < 0
+                for record in odometer_records
+            )
+
+            if has_negative:
+                self.logger.info(
+                    "Negative odometer distances detected, recalculating records for vehicle %d",
+                    vehicle_id,
+                )
+                response = self.lubelogger.recalculate_odometer_records(vehicle_id)
+                self.logger.info("Recalculation complete: %s", response.message)
+            else:
+                self.logger.debug(
+                    "No negative distances detected, skipping recalculation"
+                )
+        except LubeLoggerAPIError as e:
+            # Don't fail the entire sync - odometer records can be manually fixed
+            self.logger.error(
+                "Failed to recalculate odometer records for vehicle %d: %s",
+                vehicle_id,
+                e,
+            )

@@ -12,7 +12,7 @@ from pygments.lexers import PythonLexer  # type: ignore[import-untyped]
 
 from fuelio import FuelioClient, FuelioFillup
 from lubelogger import Lubelogger
-from exceptions import LubeloggerAPIError
+from exceptions import FuelioDataError, LubeloggerAPIError
 from models import FILLUP_EXCLUDE_KEYS, LubeloggerFillup
 
 
@@ -154,7 +154,7 @@ class SyncService:
         self.logger.debug("Fetching Fuelio backup data")
         try:
             fuelio_fills = self.fuelio.fetch_fillups(drive_folder_id, fuelio_vehicle_id)
-        except (FileNotFoundError, RuntimeError) as e:
+        except FuelioDataError as e:
             self.logger.error("Failed to fetch Fuelio data: %s", e)
             return
 

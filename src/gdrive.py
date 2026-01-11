@@ -29,7 +29,9 @@ class GDrive:
             filename=secrets_file_path,
             scopes=["https://www.googleapis.com/auth/drive.readonly"],
         )
-        self.service: DriveResource = build("drive", "v3", credentials=credentials)
+        self.service: DriveResource = build(
+            "drive", "v3", credentials=credentials, cache_discovery=False
+        )
 
     def find_file(self, folder_id: str, filename: str = "") -> list[File]:
         """Find files matching a name in a Google Drive folder"""

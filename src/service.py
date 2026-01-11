@@ -1,4 +1,4 @@
-"""Business logic for syncing Fuelio data to Lubelogger"""
+"""Business logic for syncing Fuelio data to LubeLogger"""
 
 import logging
 import sys
@@ -11,9 +11,9 @@ from pygments.formatters import Terminal256Formatter
 from pygments.lexers import PythonLexer  # type: ignore[import-untyped]
 
 from fuelio import FuelioClient, FuelioFuelRecord
-from lubelogger import Lubelogger
-from exceptions import FuelioDataError, LubeloggerAPIError
-from models import FUEL_RECORD_EXCLUDE_KEYS, LubeloggerFuelRecord
+from lubelogger import LubeLogger
+from exceptions import FuelioDataError, LubeLoggerAPIError
+from models import FUEL_RECORD_EXCLUDE_KEYS, LubeLoggerFuelRecord
 
 
 def pprint_colour(obj: Any) -> None:
@@ -25,12 +25,12 @@ def pprint_colour(obj: Any) -> None:
 
 
 class SyncService:
-    """Service for synchronising Fuelio data to Lubelogger"""
+    """Service for synchronising Fuelio data to LubeLogger"""
 
     def __init__(
         self,
         fuelio_client: FuelioClient,
-        lubelogger_client: Lubelogger,
+        lubelogger_client: LubeLogger,
         dry_run: bool = False,
     ):
         """Initialise sync service"""
@@ -41,8 +41,8 @@ class SyncService:
 
     def convert_to_lubelogger(
         self, fuel_record: FuelioFuelRecord
-    ) -> LubeloggerFuelRecord:
-        """Convert Fuelio fuel record to Lubelogger format"""
+    ) -> LubeLoggerFuelRecord:
+        """Convert Fuelio fuel record to LubeLogger format"""
         # Build notes with structured information from Fuelio record
         fuel_type_name = self.fuelio.get_fuel_type_name(fuel_record.fuel_type)
 
@@ -57,7 +57,7 @@ class SyncService:
         if fuel_record.notes:
             fuel_record_notes += f"\n\n###### Fuelio notes:\n\n{fuel_record.notes}"
 
-        return LubeloggerFuelRecord(
+        return LubeLoggerFuelRecord(
             date=fuel_record.datetime.strftime("%Y-%m-%d"),
             odometer=int(fuel_record.odometer),
             fuel_consumed=fuel_record.fuel_consumed,
@@ -69,7 +69,7 @@ class SyncService:
 
     @staticmethod
     def fuel_record_to_comparable_dict(
-        fuel_record: LubeloggerFuelRecord,
+        fuel_record: LubeLoggerFuelRecord,
     ) -> dict[str, Any]:
         """Convert fuel record to dict excluding ignored keys for comparison"""
         return {
@@ -79,7 +79,7 @@ class SyncService:
         }
 
     def find_duplicate(
-        self, new_fill: LubeloggerFuelRecord, existing_fills: list[LubeloggerFuelRecord]
+        self, new_fill: LubeLoggerFuelRecord, existing_fills: list[LubeLoggerFuelRecord]
     ) -> dict[str, Any] | None:
         """Find duplicate fuel record by date and odometer"""
         return next(
@@ -92,7 +92,7 @@ class SyncService:
         )
 
     def log_duplicate_differences(
-        self, new_fill: LubeloggerFuelRecord, existing_fill: dict[str, Any]
+        self, new_fill: LubeLoggerFuelRecord, existing_fill: dict[str, Any]
     ) -> None:
         """Log differences between new and existing fuel record"""
         self.logger.warning(
@@ -134,13 +134,13 @@ class SyncService:
             fuelio_vehicle_id,
         )
 
-        # Fetch Lubelogger vehicle info
-        self.logger.debug("Fetching Lubelogger vehicle data")
+        # Fetch LubeLogger vehicle info
+        self.logger.debug("Fetching LubeLogger vehicle data")
         try:
             vehicle_info = self.lubelogger.get_vehicle_info(lubelogger_vehicle_id)
-        except LubeloggerAPIError as e:
+        except LubeLoggerAPIError as e:
             self.logger.error(
-                "Failed to fetch info for Lubelogger vehicle with ID %d: %s",
+                "Failed to fetch info for LubeLogger vehicle with ID %d: %s",
                 lubelogger_vehicle_id,
                 e,
             )
@@ -154,7 +154,7 @@ class SyncService:
                 f"({vehicle_info.license_plate})",
             ]
         )
-        self.logger.info("Found Lubelogger vehicle: %s", vehicle_title)
+        self.logger.info("Found LubeLogger vehicle: %s", vehicle_title)
 
         # Fetch Fuelio data
         self.logger.debug("Fetching Fuelio backup data")
@@ -170,20 +170,20 @@ class SyncService:
             self.logger.warning("No fuel records found in Fuelio backup!")
             return
 
-        # Fetch Lubelogger fuel records
-        self.logger.debug("Fetching Lubelogger fuel records")
+        # Fetch LubeLogger fuel records
+        self.logger.debug("Fetching LubeLogger fuel records")
         try:
             lubelogger_fills = self.lubelogger.get_fuel_records(lubelogger_vehicle_id)
-        except LubeloggerAPIError as e:
+        except LubeLoggerAPIError as e:
             self.logger.error(
-                "Failed to fetch fuel records for Lubelogger vehicle with ID %d: %s",
+                "Failed to fetch fuel records for LubeLogger vehicle with ID %d: %s",
                 lubelogger_vehicle_id,
                 e,
             )
             return
 
         self.logger.info(
-            "Found %d fuel records in Lubelogger",
+            "Found %d fuel records in LubeLogger",
             len(lubelogger_fills),
         )
 
@@ -195,7 +195,7 @@ class SyncService:
     def _process_fuel_records(
         self,
         fuelio_fills: list[FuelioFuelRecord],
-        lubelogger_fills: list[LubeloggerFuelRecord],
+        lubelogger_fills: list[LubeLoggerFuelRecord],
         vehicle_id: int,
     ) -> None:
         """Process and sync fuel records"""
@@ -203,7 +203,7 @@ class SyncService:
 
         # Process in reverse order (oldest first)
         for fuelio_fill in reversed(fuelio_fills):
-            # Convert to Lubelogger format
+            # Convert to LubeLogger format
             new_fill = self.convert_to_lubelogger(fuelio_fill)
 
             # Check if already exists with matching attributes
@@ -227,7 +227,7 @@ class SyncService:
                 try:
                     self.lubelogger.add_fuel_record(vehicle_id, new_fill)
                     added_count += 1
-                except LubeloggerAPIError as e:
+                except LubeLoggerAPIError as e:
                     self.logger.error(
                         "Failed to add fuel record from %s: %s", new_fill.date, e
                     )
@@ -238,7 +238,7 @@ class SyncService:
                 added_count += 1
 
         if added_count == 0:
-            self.logger.info("Nothing to add, Lubelogger fuel logs are up to date!")
+            self.logger.info("Nothing to add, LubeLogger fuel logs are up to date!")
         else:
             action = "Would add" if self.dry_run else "Added"
             self.logger.info("%s %d fuel record(s)", action, added_count)

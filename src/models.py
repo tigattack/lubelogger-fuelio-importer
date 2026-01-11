@@ -12,8 +12,8 @@ FUEL_RECORD_EXCLUDE_KEYS = {"id", "fuel_economy", "extra_fields", "files"}
 DEFAULT_VECHICLE_IDENTIFIER = "LicensePlate"
 
 
-class LubeloggerAddFuelRecordResponse(BaseModel):
-    """Response from adding a fuel record to Lubelogger"""
+class LubeLoggerAddFuelRecordResponse(BaseModel):
+    """Response from adding a fuel record to LubeLogger"""
 
     success: bool
     message: str
@@ -22,8 +22,8 @@ class LubeloggerAddFuelRecordResponse(BaseModel):
     @classmethod
     def from_api_response(
         cls, data: dict[str, Any]
-    ) -> "LubeloggerAddFuelRecordResponse":
-        """Create a LubeloggerAddFuelRecordResponse from API response data"""
+    ) -> "LubeLoggerAddFuelRecordResponse":
+        """Create a LubeLoggerAddFuelRecordResponse from API response data"""
         snake_case_data = {from_camel_case(k): v for k, v in data.items()}
         return cls(**snake_case_data)
 
@@ -36,8 +36,8 @@ class LubeloggerAddFuelRecordResponse(BaseModel):
         raise ValueError("recordId not found in additional_data")
 
 
-class LubeloggerFuelRecord(BaseModel):
-    """Lubelogger fuel record object"""
+class LubeLoggerFuelRecord(BaseModel):
+    """LubeLogger fuel record object"""
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -59,19 +59,19 @@ class LubeloggerFuelRecord(BaseModel):
         return self.model_dump()
 
     def to_api_dict(self) -> dict[str, Any]:
-        """Return fuel record as dict for Lubelogger API"""
+        """Return fuel record as dict for LubeLogger API"""
         data = self.model_dump(exclude=FUEL_RECORD_EXCLUDE_KEYS)
         return {to_camel_case(k): v for k, v in data.items()}
 
     @classmethod
-    def from_api_response(cls, data: dict[str, Any]) -> "LubeloggerFuelRecord":
-        """Create a LubeloggerFuelRecord from Lubelogger API response data"""
+    def from_api_response(cls, data: dict[str, Any]) -> "LubeLoggerFuelRecord":
+        """Create a LubeLoggerFuelRecord from LubeLogger API response data"""
         snake_case_data = {from_camel_case(k): v for k, v in data.items()}
         return cls(**snake_case_data)
 
 
-class LubeloggerVehicleInfo(BaseModel):
-    """Lubelogger vehicle info object"""
+class LubeLoggerVehicleInfo(BaseModel):
+    """LubeLogger vehicle info object"""
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -103,7 +103,7 @@ class LubeloggerVehicleInfo(BaseModel):
         return self.model_dump()
 
     @classmethod
-    def from_api_response(cls, data: dict[str, Any]) -> "LubeloggerVehicleInfo":
-        """Create a LubeloggerVehicleInfo from Lubelogger API response data"""
+    def from_api_response(cls, data: dict[str, Any]) -> "LubeLoggerVehicleInfo":
+        """Create a LubeLoggerVehicleInfo from LubeLogger API response data"""
         snake_case_data = {from_camel_case(k): v for k, v in data.items()}
         return cls(**snake_case_data)

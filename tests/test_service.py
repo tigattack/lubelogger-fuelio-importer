@@ -10,7 +10,7 @@ from unittest.mock import Mock
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from fuelio import FuelioFuelRecord
-from models import LubeloggerFuelRecord
+from models import LubeLoggerFuelRecord
 from service import SyncService
 
 
@@ -32,7 +32,7 @@ class TestSyncService(unittest.TestCase):
         self.assertFalse(self.service.dry_run)
 
     def test_convert_to_lubelogger(self):
-        """Test converting Fuelio fuel record to Lubelogger format"""
+        """Test converting Fuelio fuel record to LubeLogger format"""
         self.mock_fuelio.get_fuel_type_name.return_value = "Petrol Regular"
 
         fuelio_fill = FuelioFuelRecord(
@@ -51,7 +51,7 @@ class TestSyncService(unittest.TestCase):
 
         result = self.service.convert_to_lubelogger(fuelio_fill)
 
-        self.assertIsInstance(result, LubeloggerFuelRecord)
+        self.assertIsInstance(result, LubeLoggerFuelRecord)
         self.assertEqual(result.date, "2024-01-15")
         self.assertEqual(result.odometer, 12345)
         self.assertEqual(result.fuel_consumed, 45.5)
@@ -64,7 +64,7 @@ class TestSyncService(unittest.TestCase):
 
     def test_fuel_record_to_comparable_dict(self):
         """Test converting fuel record to comparable dict"""
-        fuel_record = LubeloggerFuelRecord(
+        fuel_record = LubeLoggerFuelRecord(
             date="2024-01-15",
             odometer=12345,
             fuel_consumed=45.5,
@@ -83,7 +83,7 @@ class TestSyncService(unittest.TestCase):
 
     def test_find_duplicate_found(self):
         """Test finding duplicate fuel record"""
-        new_fill = LubeloggerFuelRecord(
+        new_fill = LubeLoggerFuelRecord(
             date="2024-01-15",
             odometer=12345,
             fuel_consumed=45.5,
@@ -93,7 +93,7 @@ class TestSyncService(unittest.TestCase):
         )
 
         existing_fills = [
-            LubeloggerFuelRecord(
+            LubeLoggerFuelRecord(
                 date="2024-01-15",
                 odometer=12345,
                 fuel_consumed=45.0,  # Different amount
@@ -111,7 +111,7 @@ class TestSyncService(unittest.TestCase):
 
     def test_find_duplicate_not_found(self):
         """Test finding duplicate when none exists"""
-        new_fill = LubeloggerFuelRecord(
+        new_fill = LubeLoggerFuelRecord(
             date="2024-01-15",
             odometer=12345,
             fuel_consumed=45.5,
@@ -121,7 +121,7 @@ class TestSyncService(unittest.TestCase):
         )
 
         existing_fills = [
-            LubeloggerFuelRecord(
+            LubeLoggerFuelRecord(
                 date="2024-01-16",  # Different date
                 odometer=12400,  # Different odometer
                 fuel_consumed=45.0,
@@ -162,7 +162,7 @@ class TestSyncService(unittest.TestCase):
         self.mock_fuelio.fetch_fuel_records.return_value = [fuelio_fill]
         self.mock_fuelio.get_fuel_type_name.return_value = "Petrol Regular"
 
-        # Mock Lubelogger fuel records (empty)
+        # Mock LubeLogger fuel records (empty)
         self.mock_lubelogger.get_fuel_records.return_value = []
 
         # Run sync

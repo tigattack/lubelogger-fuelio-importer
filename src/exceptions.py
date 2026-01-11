@@ -1,37 +1,37 @@
 """Custom exceptions"""
 
 
-class LubeloggerFuelioError(Exception):
-    """Base exception for all Lubelogger-Fuelio sync errors"""
+class LubeLoggerFuelioError(Exception):
+    """Base exception for all LubeLogger-Fuelio sync errors"""
 
     pass
 
 
-class ConfigError(LubeloggerFuelioError):
+class ConfigError(LubeLoggerFuelioError):
     """Configuration-related errors"""
 
     pass
 
 
-class FuelioDataError(LubeloggerFuelioError):
+class FuelioDataError(LubeLoggerFuelioError):
     """Fuelio data processing errors"""
 
     pass
 
 
-class LubeloggerAPIError(LubeloggerFuelioError):
-    """Lubelogger API errors"""
+class LubeLoggerAPIError(LubeLoggerFuelioError):
+    """LubeLogger API errors"""
 
     pass
 
 
-class GDriveError(LubeloggerFuelioError):
+class GDriveError(LubeLoggerFuelioError):
     """Google Drive API errors"""
 
     pass
 
 
-class SyncError(LubeloggerFuelioError):
+class SyncError(LubeLoggerFuelioError):
     """Sync operation errors"""
 
     pass

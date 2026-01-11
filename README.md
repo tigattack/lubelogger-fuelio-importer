@@ -1,6 +1,6 @@
 # lubelogger-fuelio-importer
 
-Python script to import fuel records from [Fuelio](https://fuel.io/)'s Google Drive backups to [Lubelogger](https://github.com/hargata/lubelog).
+Python script to import fuel records from [Fuelio](https://fuel.io/)'s Google Drive backups to [LubeLogger](https://github.com/hargata/lubelog).
 
 # Usage
 
@@ -41,8 +41,8 @@ First, a couple of prerequisites:
 Now you can complete the configuration for the importer:
 
 1. Copy `config.example.yml` to `config.yml`, and open it in an editor.
-2. Define your vehicle('s) IDs in Fuelio & Lubelogger.
-3. Set your Lubelogger domain, username, and password.
+2. Define your vehicle('s) IDs in Fuelio & LubeLogger.
+3. Set your LubeLogger URL, username, and password.
 4. Set your Google Drive folder ID (see instructions below).
 5. Create your Google authentication credentials JSON (see instructions below) and move the file in place
 6. Set your credentials filename and the relevant `auth_type` in the config.
@@ -56,7 +56,7 @@ If you're unsure, download and extract the backup ZIP of each vehicle and inspec
 
 ## Retrieve your Lubelogger vehicle ID
 
-1. Open Lubelogger in a browser.
+1. Open LubeLogger in a browser.
 2. Navigate to the vehicle in question.
 3. The vehicle ID will be in the URL like so: `https://lubelogger.domain.tld/Vehicle/Index?vehicleId=<vehicle ID here>`
 

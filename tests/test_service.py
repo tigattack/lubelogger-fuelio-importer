@@ -76,7 +76,7 @@ class TestSyncService(unittest.TestCase):
 
         result = SyncService.fillup_to_comparable_dict(fillup)
 
-        # Should exclude FILLUP_IGNORE_KEYS
+        # Should exclude FILLUP_EXCLUDE_KEYS
         self.assertIsInstance(result, dict)
         self.assertIn("date", result)
         self.assertIn("odometer", result)

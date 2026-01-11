@@ -13,7 +13,7 @@ from pygments.lexers import PythonLexer  # type: ignore[import-untyped]
 from fuelio import FuelioClient, FuelioFillup
 from lubelogger import Lubelogger
 from exceptions import LubeloggerAPIError
-from models import FILLUP_IGNORE_KEYS, LubeloggerFillup
+from models import FILLUP_EXCLUDE_KEYS, LubeloggerFillup
 
 
 def pprint_colour(obj: Any) -> None:
@@ -69,7 +69,7 @@ class SyncService:
     def fillup_to_comparable_dict(fillup: LubeloggerFillup) -> dict[str, Any]:
         """Convert fillup to dict excluding ignored keys for comparison"""
         return {
-            k: v for k, v in fillup.to_dict().items() if k not in FILLUP_IGNORE_KEYS
+            k: v for k, v in fillup.to_dict().items() if k not in FILLUP_EXCLUDE_KEYS
         }
 
     def find_duplicate(
@@ -105,7 +105,7 @@ class SyncService:
         # Log each differing field (excluding ignored keys)
         for key, new_value in new_fill.to_dict().items():
             if (
-                key not in FILLUP_IGNORE_KEYS
+                key not in FILLUP_EXCLUDE_KEYS
                 and key in existing_fill
                 and new_value != existing_fill[key]
             ):

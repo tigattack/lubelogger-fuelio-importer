@@ -7,7 +7,7 @@ Python script to import fuel records from [Fuelio](https://fuel.io/)'s Google Dr
 - **LubeLogger**: v1.5.7 or later
 - Python 3.12+ if using standalone method
 
-# Usage
+## Usage
 
 ```
 ❯ python3 main.py -h
@@ -54,7 +54,7 @@ docker compose up [-d]
 > [!TIP]
 > You will need to download [docker-compose.yml](docker-compose.yml) to current directory before running.
 
-# Getting Started
+## Getting Started
 
 First, a couple of prerequisites:
 
@@ -71,25 +71,25 @@ Now you can complete the configuration for the importer:
 6. Set your credentials filename and the relevant `auth_type` in the config.
 7. Run the importer per the [Usage](#usage) section above.
 
-## Retrieve your Fuelio vehicle ID
+### Retrieve your Fuelio vehicle ID
 
 Fuelio vehicle IDs are chronological, i.e. the first vehicle you add to Fuelio is ID 1, the second is ID 2, and so on.
 
 If you're unsure, download and extract the backup ZIP of each vehicle and inspect the CSV inside.
 
-## Retrieve your Lubelogger vehicle ID
+### Retrieve your LubeLogger vehicle ID
 
 1. Open LubeLogger in a browser.
 2. Navigate to the vehicle in question.
 3. The vehicle ID will be in the URL like so: `https://lubelogger.domain.tld/Vehicle/Index?vehicleId=<vehicle ID here>`
 
-## Retrieve your Google Drive Folder ID
+### Retrieve your Google Drive Folder ID
 
 1. Open Google Drive in a browser.
 2. Navigate to the folder in which Fulio stores its backups.
 3. The folder ID will be in the URL like so: `https://drive.google.com/drive/folders/<folder ID here>`
 
-## Generate Google Drive API credentials
+### Generate Google Drive API credentials
 
 1. Go to APIs Console and make your own project.
 2. Search for "Google Drive API", select the entry, and click "Enable".
@@ -109,7 +109,9 @@ If you're unsure, download and extract the backup ZIP of each vehicle and inspec
 12. Navigate to the folder in which Fulio stores its backups.
 13. Share the folder with the service account using email address you copied in step 8. The "Viewer" role is all it needs.
 
-# Fuelio CSV Rant
+---
+
+## Fuelio CSV Rant
 
 I'd like to rant about the CSV files in Fuelio's backups.
 

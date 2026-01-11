@@ -36,6 +36,43 @@ class LubeLoggerAddFuelRecordResponse(BaseModel):
         raise ValueError("recordId not found in additional_data")
 
 
+class LubeLoggerOdoRecalculateResponse(BaseModel):
+    """Response from recalculating odometer records in LubeLogger"""
+
+    success: bool
+    message: str
+
+
+class LubeLoggerOdometerRecord(BaseModel):
+    """LubeLogger odometer record object"""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: int
+    date: str
+    initial_odometer: int
+    odometer: int
+    notes: str = ""
+    tags: str = ""
+    extra_fields: list[Any] = Field(default_factory=list)
+    files: list[Any] = Field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return odometer record as dict"""
+        return self.model_dump()
+
+    def to_api_dict(self) -> dict[str, Any]:
+        """Return odometer record as dict for LubeLogger API"""
+        data = self.model_dump()
+        return {to_camel_case(k): v for k, v in data.items()}
+
+    @classmethod
+    def from_api_response(cls, data: dict[str, Any]) -> "LubeLoggerOdometerRecord":
+        """Create a LubeLoggerOdometerRecord from LubeLogger API response data"""
+        snake_case_data = {from_camel_case(k): v for k, v in data.items()}
+        return cls(**snake_case_data)
+
+
 class LubeLoggerFuelRecord(BaseModel):
     """LubeLogger fuel record object"""
 

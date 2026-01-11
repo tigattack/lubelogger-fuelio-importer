@@ -8,6 +8,9 @@ pre-commit:
     ruff-format:
       glob: "*.py"
       run: ruff format {staged_files}
+    pyright:
+      glob: "*.py"
+      run: pyright {staged_files}
 
 pre-push:
   commands:

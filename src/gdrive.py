@@ -8,6 +8,8 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 from googleapiclient.errors import HttpError
 
+from exceptions import GDriveError
+
 logger = logging.getLogger(__name__)
 
 
@@ -39,10 +41,11 @@ class GDrive:
 
             return results.get("files", [])
         except HttpError as error:
-            logger.error(f"An error occurred while listing files: {error}")
-            return []
+            raise GDriveError(
+                f"Failed to list files in folder {folder_id}: {error}"
+            ) from error
 
-    def download_file(self, file_id: str) -> io.BytesIO | None:
+    def download_file(self, file_id: str) -> io.BytesIO:
         """Download a file from Google Drive"""
         try:
             request = self.service.files().get_media(fileId=file_id)
@@ -56,5 +59,4 @@ class GDrive:
             file_content.seek(0)
             return file_content
         except HttpError as error:
-            logger.error(f"An error occurred while downloading file: {error}")
-            return None
+            raise GDriveError(f"Failed to download file {file_id}: {error}") from error

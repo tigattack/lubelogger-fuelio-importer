@@ -1,3 +1,6 @@
+"""Utility functions"""
+
+
 # Source - https://stackoverflow.com/a/19053800
 # Posted by jbaiter, modified by community. See post 'Timeline' for change history
 # Retrieved 2024-03-15, License - CC BY-SA 4.0

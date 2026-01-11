@@ -1,3 +1,5 @@
+"""Data models"""
+
 from dataclasses import asdict, dataclass, field
 
 from util import from_camel_case, to_camel_case

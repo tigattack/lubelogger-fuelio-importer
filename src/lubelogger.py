@@ -1,8 +1,11 @@
+"""Lubelogger API client"""
+
 import logging
 
 import requests
 from requests.auth import HTTPBasicAuth
 
+from exceptions import LubeloggerAPIError
 from models import LubeloggerFillup, LubeloggerVehicleInfo
 
 logger = logging.getLogger(__name__)
@@ -31,25 +34,25 @@ class Lubelogger:
                 timeout=self.timeout,
             )
             response.raise_for_status()
-        except requests.exceptions.ReadTimeout:
-            logger.error("Lubelogger API timed out while fetching fillups")
-            return []
+        except requests.exceptions.ReadTimeout as exc:
+            raise LubeloggerAPIError(
+                f"API timed out while fetching fillups for vehicle {vehicle_id}"
+            ) from exc
         except requests.exceptions.HTTPError as exc:
-            logger.error(
-                "HTTP error fetching fillups: %s (status: %s)",
-                exc,
-                response.status_code if response else "unknown",
-            )
-            return []
+            status = response.status_code if response else "unknown"
+            raise LubeloggerAPIError(
+                f"HTTP {status} error fetching fillups for vehicle {vehicle_id}: {exc}"
+            ) from exc
         except requests.exceptions.RequestException as exc:
-            logger.error("Request error fetching fillups: %s", exc)
-            return []
+            raise LubeloggerAPIError(
+                f"Request failed while fetching fillups for vehicle {vehicle_id}: {exc}"
+            ) from exc
 
         return [LubeloggerFillup.from_api_response(f) for f in response.json()]
 
     def add_fillup(
         self, vehicle_id: int, fillup: LubeloggerFillup
-    ) -> requests.Response | None:
+    ) -> requests.Response:
         """Add a fuel fillup log to Lubelogger"""
         params = {"vehicleId": vehicle_id}
         response = None
@@ -62,21 +65,21 @@ class Lubelogger:
             )
             response.raise_for_status()
             return response
-        except requests.exceptions.ReadTimeout:
-            logger.error("Lubelogger API timed out while adding fillup")
-            return None
+        except requests.exceptions.ReadTimeout as exc:
+            raise LubeloggerAPIError(
+                f"API timed out while adding fillup to vehicle {vehicle_id}"
+            ) from exc
         except requests.exceptions.HTTPError as exc:
-            logger.error(
-                "HTTP error adding fillup: %s (status: %s)",
-                exc,
-                response.status_code if response else "unknown",
-            )
-            return None
+            status = response.status_code if response else "unknown"
+            raise LubeloggerAPIError(
+                f"HTTP {status} error adding fillup to vehicle {vehicle_id}: {exc}"
+            ) from exc
         except requests.exceptions.RequestException as exc:
-            logger.error("Request error adding fillup: %s", exc)
-            return None
+            raise LubeloggerAPIError(
+                f"Request failed while adding fillup to vehicle {vehicle_id}: {exc}"
+            ) from exc
 
-    def get_vehicle_info(self, vehicle_id: int) -> LubeloggerVehicleInfo | None:
+    def get_vehicle_info(self, vehicle_id: int) -> LubeloggerVehicleInfo:
         """Get vehicle info from Lubelogger"""
         params = {"vehicleId": vehicle_id}
         response = None
@@ -91,17 +94,19 @@ class Lubelogger:
             # API returns a list with a single element containing vehicleData
             if data and len(data) > 0 and "vehicleData" in data[0]:
                 return LubeloggerVehicleInfo.from_api_response(data[0]["vehicleData"])
-            return None
-        except requests.exceptions.ReadTimeout:
-            logger.error("Lubelogger API timed out while fetching vehicle info")
-            return None
-        except requests.exceptions.HTTPError as exc:
-            logger.error(
-                "HTTP error fetching vehicle info: %s (status: %s)",
-                exc,
-                response.status_code if response else "unknown",
+            raise LubeloggerAPIError(
+                f"Vehicle {vehicle_id} not found or invalid response format"
             )
-            return None
+        except requests.exceptions.ReadTimeout as exc:
+            raise LubeloggerAPIError(
+                f"API timed out while fetching info for vehicle {vehicle_id}"
+            ) from exc
+        except requests.exceptions.HTTPError as exc:
+            status = response.status_code if response else "unknown"
+            raise LubeloggerAPIError(
+                f"HTTP {status} error fetching info for vehicle {vehicle_id}: {exc}"
+            ) from exc
         except requests.exceptions.RequestException as exc:
-            logger.error("Request error fetching vehicle info: %s", exc)
-            return None
+            raise LubeloggerAPIError(
+                f"Request failed while fetching info for vehicle {vehicle_id}: {exc}"
+            ) from exc

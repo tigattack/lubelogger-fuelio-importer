@@ -17,6 +17,9 @@ if TYPE_CHECKING:
         File,
     )
 
+# Fuelio backups implement a fundamentally broken CSV structure. This makes parsing them very frustrating.
+# See my rant in the README for details.
+
 
 # CSV field indices for Fuelio fuel record data
 # Based on Fuelio export format: Data, Odo, Fuel, Full, Price, mpg, lat, lon, City, Notes, Missed, TankNumber, FuelType, etc.
@@ -191,19 +194,42 @@ class FuelioClient:
                 return list(reader)
 
     def _parse_csv(self, csv_data: list[dict[str, Any]]) -> list[FuelioFuelRecord]:
-        """Parse Fuelio CSV data and filter to only fuel records
+        """Parse Fuelio CSV data and extract fuel records
 
-        Fuelio CSV contains multiple sections. Fuel records have a datetime
-        in the '## Vehicle' column (format: YYYY-MM-DD HH:MM).
+        Fuelio CSV contains multiple sections (## Vehicle, ## Log, ## CostCategories, etc.).
+        Fuel records are in the ## Log section.
         """
         fuel_records: list[FuelioFuelRecord] = []
+        in_log_section = False
+
         for row in csv_data:
+            first_col = row.get("## Vehicle", "")
+
+            # Track which section we're in
+            if first_col == "## Log":
+                in_log_section = True
+                continue
+            elif first_col.startswith("##"):
+                in_log_section = False
+                continue
+
+            # Skip rows outside the Log section
+            if not in_log_section:
+                continue
+
+            # Skip header row (contains "Data" in first column)
+            if first_col == "Data":
+                continue
+
+            # Try to parse fuel record
             try:
-                # Try to parse as datetime - this identifies fuel records
-                datetime.strptime(row["## Vehicle"], "%Y-%m-%d %H:%M")
                 fuel_records.append(FuelioFuelRecord.from_csv_row(row))
-            except (ValueError, KeyError):
-                # Not a fuel record (header or other section)
+            except (ValueError, KeyError, TypeError) as e:
+                self.logger.debug(
+                    "Skipping row with invalid data: %s (error: %s)",
+                    first_col,
+                    e,
+                )
                 continue
 
         return fuel_records

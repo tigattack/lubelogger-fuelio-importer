@@ -34,9 +34,10 @@ options:
 
 ### Standalone
 
-```sh
-python3 main.py [-h|--help] [--dry-run] [--log-level {debug,info,warning,error,critical}] [config_dir]
-```
+- Clone repository
+- [Optional] Checkout tag
+- Change to `src` directory
+- Run `python3 main.py <args>`
 
 ### Docker
 

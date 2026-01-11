@@ -29,4 +29,6 @@ jobs:
 
       - run: uv run --frozen ruff format --check src/
 
+      - run: uv run --frozen pyright src/
+
       - run: uv run --frozen python -m unittest discover -s tests -p "test_*.py" -v

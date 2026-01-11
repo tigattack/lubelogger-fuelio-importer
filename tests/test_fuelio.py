@@ -116,7 +116,12 @@ class TestFuelioClient(unittest.TestCase):
 
             # Based on actual Fuelio CSV structure
             csv_data = [
-                # Header row (not a fuel record)
+                # Vehicle section
+                {"## Vehicle": "## Vehicle", None: []},
+                {"## Vehicle": "Name", None: ["Description", "DistUnit"]},
+                # Log section starts
+                {"## Vehicle": "## Log", None: []},
+                # Header row (should be skipped)
                 {"## Vehicle": "Data", None: ["Odo (mi)", "Fuel (litres)", "Full"]},
                 # Valid fuel record with complete data
                 {
@@ -141,8 +146,6 @@ class TestFuelioClient(unittest.TestCase):
                         "0.0",  # 16: TankCalc
                     ],
                 },
-                # Another header-like row (section separator)
-                {"## Vehicle": "## CostCategories", None: []},
                 # Another valid fuel record
                 {
                     "## Vehicle": "2024-03-11 10:30",
@@ -165,6 +168,13 @@ class TestFuelioClient(unittest.TestCase):
                         "219",  # 15: UniqueId
                         "0.0",  # 16: TankCalc
                     ],
+                },
+                # End of Log section (new section begins - should stop parsing fuel records)
+                {"## Vehicle": "## CostCategories", None: []},
+                # This should be ignored (not in Log section)
+                {
+                    "## Vehicle": "2024-03-12 12:00",
+                    None: ["999999.0", "50.0", "1", "70.00"],
                 },
             ]
 

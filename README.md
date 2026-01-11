@@ -85,3 +85,23 @@ If you're unsure, download and extract the backup ZIP of each vehicle and inspec
 11. Open Google Drive in a browser.
 12. Navigate to the folder in which Fulio stores its backups.
 13. Share the folder with the service account using email address you copied in step 8. The "Viewer" role is all it needs.
+
+# Fuelio CSV Rant
+
+I'd like to rant about the CSV files in Fuelio's backups.
+
+What Fuelio have implemented in these files is a fundamentally broken CSV structure. TL;DR it should be multiple files or a proper hierarchical format, but instead it's a single file behaving as if it's multiple files hacked together.
+
+1. Multiple sections in one file (`## Vehicle`, `## Log`, `## CostCategories`, etc.)
+   - Each section has a completely different schema
+   - There's no "standard" way to distinguish section markers from data rows
+2. `csv.DictReader` treats the first row (`## Vehicle`) as the header for the entire file because... well, it should be
+   - Result is all rows have their first column mapped to the `## Vehicle` key
+   - All other columns in each row get shoved into a list under the `None` key
+   - We're essentially parsing a multi-schema document as if it has one header row
+3. Each section has its own column header row that we need to skip
+4. The only way to identify fuel records is by knowing they're in the `## Log` section and/or Trying to parse the first column as a datetime (`YYYY-MM-DD HH:MM`) (less reliable).
+
+As a result of all this, the parser is frustrating to work on, and feels convoluted and janky.
+
+See [src/fuelio.py](src/fuelio.py) for implementation.

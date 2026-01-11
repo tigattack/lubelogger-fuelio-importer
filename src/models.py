@@ -12,6 +12,28 @@ FILLUP_EXCLUDE_KEYS = {"id", "fuel_economy", "extra_fields", "files"}
 DEFAULT_VECHICLE_IDENTIFIER = "LicensePlate"
 
 
+class LubeloggerAddFillupResponse(BaseModel):
+    """Response from adding a fillup to Lubelogger"""
+
+    success: bool
+    message: str
+    additional_data: dict[str, Any] = Field(default_factory=dict)
+
+    @classmethod
+    def from_api_response(cls, data: dict[str, Any]) -> "LubeloggerAddFillupResponse":
+        """Create a LubeloggerAddFillupResponse from API response data"""
+        snake_case_data = {from_camel_case(k): v for k, v in data.items()}
+        return cls(**snake_case_data)
+
+    @property
+    def record_id(self) -> int:
+        """Fillup record ID"""
+        id = self.additional_data.get("recordId")
+        if isinstance(id, int):
+            return id
+        raise ValueError("recordId not found in additional_data")
+
+
 class LubeloggerFillup(BaseModel):
     """Lubelogger fuel fillup object"""
 

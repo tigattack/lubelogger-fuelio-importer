@@ -6,7 +6,11 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 from exceptions import LubeloggerAPIError
-from models import LubeloggerFillup, LubeloggerVehicleInfo
+from models import (
+    LubeloggerAddFillupResponse,
+    LubeloggerFillup,
+    LubeloggerVehicleInfo,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +56,7 @@ class Lubelogger:
 
     def add_fillup(
         self, vehicle_id: int, fillup: LubeloggerFillup
-    ) -> requests.Response:
+    ) -> LubeloggerAddFillupResponse:
         """Add a fuel fillup log to Lubelogger"""
         params = {"vehicleId": vehicle_id}
         response = None
@@ -64,7 +68,7 @@ class Lubelogger:
                 timeout=self.timeout,
             )
             response.raise_for_status()
-            return response
+            return LubeloggerAddFillupResponse.from_api_response(response.json())
         except requests.exceptions.ReadTimeout as exc:
             raise LubeloggerAPIError(
                 f"API timed out while adding fillup to vehicle {vehicle_id}"

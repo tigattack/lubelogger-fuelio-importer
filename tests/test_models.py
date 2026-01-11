@@ -9,7 +9,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from models import (
-    FILLUP_IGNORE_KEYS,
+    FILLUP_EXCLUDE_KEYS,
     LubeloggerFillup,
     LubeloggerVehicleInfo,
 )
@@ -83,7 +83,7 @@ class TestLubeloggerFillup(unittest.TestCase):
         self.assertEqual(api_dict["missedFuelUp"], False)
 
         # Check ignored keys are removed
-        for key in FILLUP_IGNORE_KEYS:
+        for key in FILLUP_EXCLUDE_KEYS:
             camel_key = key
             # Convert to camelCase for checking
             if "_" in key:
@@ -261,7 +261,7 @@ class TestLubeloggerVehicleInfo(unittest.TestCase):
         self.assertEqual(minimal_vehicle.image_location, "")
         self.assertEqual(minimal_vehicle.map_location, "")
         self.assertEqual(minimal_vehicle.purchase_date, "")
-        self.assertEqual(minimal_vehicle.sold_date, "")
+        self.assertIsNone(minimal_vehicle.sold_date)
         self.assertEqual(minimal_vehicle.purchase_price, 0.0)
         self.assertEqual(minimal_vehicle.sold_price, 0.0)
         self.assertFalse(minimal_vehicle.is_electric)

@@ -1,3 +1,6 @@
+"""Utility functions"""
+
+
 # Source - https://stackoverflow.com/a/19053800
 # Posted by jbaiter, modified by community. See post 'Timeline' for change history
 # Retrieved 2024-03-15, License - CC BY-SA 4.0
@@ -10,7 +13,7 @@ def to_camel_case(snake_str: str) -> str:
 
 def from_camel_case(camel_str: str) -> str:
     """Convert camelCase string to snake_case"""
-    result = []
+    result: list[str] = []
     for i, char in enumerate(camel_str):
         if char.isupper() and i > 0:
             result.append("_")

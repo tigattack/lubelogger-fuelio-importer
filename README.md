@@ -2,6 +2,11 @@
 
 Python script to import fuel records from [Fuelio](https://fuel.io/)'s Google Drive backups to [LubeLogger](https://github.com/hargata/lubelog).
 
+## Requirements
+
+- **LubeLogger**: v1.5.7 or later
+- Python 3.12+ if using standalone method
+
 # Usage
 
 **Defaults:**

@@ -9,6 +9,8 @@ from exceptions import LubeLoggerAPIError
 from models import (
     LubeLoggerAddFuelRecordResponse,
     LubeLoggerFuelRecord,
+    LubeLoggerOdometerRecord,
+    LubeLoggerOdoRecalculateResponse,
     LubeLoggerVehicleInfo,
 )
 
@@ -54,10 +56,65 @@ class LubeLogger:
 
         return [LubeLoggerFuelRecord.from_api_response(f) for f in response.json()]
 
+    def get_odometer_records(self, vehicle_id: int) -> list[LubeLoggerOdometerRecord]:
+        """Get all odometer records from LubeLogger"""
+        params = {"vehicleId": vehicle_id}
+        response = None
+        try:
+            response = self.session.get(
+                f"{self.url}/api/vehicle/odometerrecords",
+                params=params,
+                timeout=self.timeout,
+            )
+            response.raise_for_status()
+        except requests.exceptions.ReadTimeout as exc:
+            raise LubeLoggerAPIError(
+                f"API timed out while fetching odometer records for vehicle {vehicle_id}"
+            ) from exc
+        except requests.exceptions.HTTPError as exc:
+            status = response.status_code if response else "unknown"
+            raise LubeLoggerAPIError(
+                f"HTTP {status} error fetching odometer records for vehicle {vehicle_id}: {exc}"
+            ) from exc
+        except requests.exceptions.RequestException as exc:
+            raise LubeLoggerAPIError(
+                f"Request failed while fetching odometer records for vehicle {vehicle_id}: {exc}"
+            ) from exc
+
+        return [LubeLoggerOdometerRecord.from_api_response(r) for r in response.json()]
+
+    def recalculate_odometer_records(
+        self, vehicle_id: int
+    ) -> LubeLoggerOdoRecalculateResponse:
+        """Recalculate odometer records for a vehicle"""
+        params = {"vehicleId": vehicle_id}
+        response = None
+        try:
+            response = self.session.put(
+                f"{self.url}/api/vehicle/odometerrecords/recalculate",
+                params=params,
+                timeout=self.timeout,
+            )
+            response.raise_for_status()
+            return LubeLoggerOdoRecalculateResponse(**response.json())
+        except requests.exceptions.ReadTimeout as exc:
+            raise LubeLoggerAPIError(
+                f"API timed out while recalculating odometer records for vehicle {vehicle_id}"
+            ) from exc
+        except requests.exceptions.HTTPError as exc:
+            status = response.status_code if response else "unknown"
+            raise LubeLoggerAPIError(
+                f"HTTP {status} error recalculating odometer records for vehicle {vehicle_id}: {exc}"
+            ) from exc
+        except requests.exceptions.RequestException as exc:
+            raise LubeLoggerAPIError(
+                f"Request failed while recalculating odometer records for vehicle {vehicle_id}: {exc}"
+            ) from exc
+
     def add_fuel_record(
         self, vehicle_id: int, fuel_record: LubeLoggerFuelRecord
     ) -> LubeLoggerAddFuelRecordResponse:
-        """Add a fuel record log to LubeLogger"""
+        """Add a fuel record to LubeLogger"""
         params = {"vehicleId": vehicle_id}
         response = None
         try:

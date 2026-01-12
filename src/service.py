@@ -268,8 +268,7 @@ class SyncService:
 
             if has_negative:
                 self.logger.info(
-                    "Negative odometer distances detected, recalculating records for vehicle %d",
-                    vehicle_id,
+                    "Negative odometer distances detected, recalculating records",
                 )
                 response = self.lubelogger.recalculate_odometer_records(vehicle_id)
                 self.logger.info("Recalculation complete: %s", response.message)

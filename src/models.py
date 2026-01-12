@@ -52,8 +52,8 @@ class LubeLoggerOdometerRecord(BaseModel):
     date: str
     initial_odometer: int
     odometer: int
-    notes: str = ""
-    tags: str = ""
+    notes: str | None = None
+    tags: str | None = ""
     extra_fields: list[Any] = Field(default_factory=list)
     files: list[Any] = Field(default_factory=list)
 

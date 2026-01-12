@@ -10,24 +10,7 @@ from unittest.mock import Mock, patch
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from exceptions import FuelioDataError
-from fuelio import FuelioClient, FuelioFields, FuelioFuelRecord
-
-
-class TestFuelioFields(unittest.TestCase):
-    """Tests for FuelioFields constants"""
-
-    def test_field_indices(self):
-        """Test that field indices are defined"""
-        self.assertEqual(FuelioFields.ODOMETER, 0)
-        self.assertEqual(FuelioFields.FUEL_CONSUMED, 1)
-        self.assertEqual(FuelioFields.IS_FULL, 2)
-        self.assertEqual(FuelioFields.COST, 3)
-        self.assertEqual(FuelioFields.LATITUDE, 5)
-        self.assertEqual(FuelioFields.LONGITUDE, 6)
-        self.assertEqual(FuelioFields.STATION, 7)
-        self.assertEqual(FuelioFields.NOTES, 8)
-        self.assertEqual(FuelioFields.MISSED, 9)
-        self.assertEqual(FuelioFields.FUEL_TYPE, 11)
+from fuelio import FuelioClient, FuelioFuelRecord
 
 
 class TestFuelioFuelRecord(unittest.TestCase):
@@ -35,31 +18,29 @@ class TestFuelioFuelRecord(unittest.TestCase):
 
     def test_from_csv_row(self):
         """Test creating FuelioFuelRecord from CSV row"""
-        # Based on actual Fuelio CSV structure from fuelio_backup_sample.csv
+        # Based on actual Fuelio CSV structure with proper column names
         row = {
-            "## Vehicle": "2024-03-10 16:01",
-            None: [
-                "212477.0",  # 0: Odo (mi)
-                "46.301",  # 1: Fuel (litres)
-                "1",  # 2: Full
-                "67.09",  # 3: Price
-                "21.8",  # 4: mpg (optional)
-                "51.16514",  # 5: latitude (optional)
-                "-2.99017",  # 6: longitude (optional)
-                "Somerset - Sun all Service Station",  # 7: City (optional)
-                "Test notes",  # 8: Notes (optional)
-                "0",  # 9: Missed
-                "1",  # 10: TankNumber
-                "-1",  # 11: FuelType
-                "1.449",  # 12: VolumePrice
-                "496456",  # 13: StationID (optional)
-                "0.0",  # 14: ExcludeDistance
-                "218",  # 15: UniqueId
-                "0.0",  # 16: TankCalc
-            ],
+            "Data": "2024-03-10 16:01",
+            "Odo (mi)": "212477.0",
+            "Fuel (litres)": "46.301",
+            "Full": "1",
+            "Price (optional)": "67.09",
+            "mpg (optional)": "21.8",
+            "latitude (optional)": "51.16514",
+            "longitude (optional)": "-2.99017",
+            "City (optional)": "Somerset - Sun all Service Station",
+            "Notes (optional)": "Test notes",
+            "Missed": "0",
+            "TankNumber": "1",
+            "FuelType": "-1",
+            "VolumePrice": "1.449",
+            "StationID (optional)": "496456",
+            "ExcludeDistance": "0.0",
+            "UniqueId": "218",
+            "TankCalc": "0.0",
         }
 
-        fuel_record = FuelioFuelRecord.from_csv_row(row)  # type: ignore
+        fuel_record = FuelioFuelRecord.from_csv_row(row)
 
         self.assertEqual(fuel_record.datetime, datetime(2024, 3, 10, 16, 1))
         self.assertEqual(fuel_record.odometer, 212477.0)
@@ -114,71 +95,13 @@ class TestFuelioClient(unittest.TestCase):
         with patch("fuelio.GDrive"):
             client = FuelioClient("/path/to/creds.json")
 
-            # Based on actual Fuelio CSV structure
-            csv_data = [
-                # Vehicle section
-                {"## Vehicle": "## Vehicle", None: []},
-                {"## Vehicle": "Name", None: ["Description", "DistUnit"]},
-                # Log section starts
-                {"## Vehicle": "## Log", None: []},
-                # Header row (should be skipped)
-                {"## Vehicle": "Data", None: ["Odo (mi)", "Fuel (litres)", "Full"]},
-                # Valid fuel record with complete data
-                {
-                    "## Vehicle": "2024-03-10 16:01",
-                    None: [
-                        "212477.0",  # 0: Odo
-                        "46.301",  # 1: Fuel
-                        "1",  # 2: Full
-                        "67.09",  # 3: Price
-                        "21.8",  # 4: mpg
-                        "51.16514",  # 5: latitude
-                        "-2.99017",  # 6: longitude
-                        "Somerset - Sun all Service Station",  # 7: City/Station
-                        "",  # 8: Notes (empty)
-                        "0",  # 9: Missed
-                        "1",  # 10: TankNumber
-                        "-1",  # 11: FuelType
-                        "1.449",  # 12: VolumePrice
-                        "496456",  # 13: StationID
-                        "0.0",  # 14: ExcludeDistance
-                        "218",  # 15: UniqueId
-                        "0.0",  # 16: TankCalc
-                    ],
-                },
-                # Another valid fuel record
-                {
-                    "## Vehicle": "2024-03-11 10:30",
-                    None: [
-                        "212523.5",  # 0: Odo
-                        "40.0",  # 1: Fuel
-                        "1",  # 2: Full
-                        "58.00",  # 3: Price
-                        "28.5",  # 4: mpg
-                        "51.5",  # 5: latitude
-                        "-0.1",  # 6: longitude
-                        "BP Station",  # 7: City/Station
-                        "Highway fill",  # 8: Notes
-                        "0",  # 9: Missed
-                        "1",  # 10: TankNumber
-                        "110",  # 11: FuelType (Petrol Regular)
-                        "1.450",  # 12: VolumePrice
-                        "496457",  # 13: StationID
-                        "0.0",  # 14: ExcludeDistance
-                        "219",  # 15: UniqueId
-                        "0.0",  # 16: TankCalc
-                    ],
-                },
-                # End of Log section (new section begins - should stop parsing fuel records)
-                {"## Vehicle": "## CostCategories", None: []},
-                # This should be ignored (not in Log section)
-                {
-                    "## Vehicle": "2024-03-12 12:00",
-                    None: ["999999.0", "50.0", "1", "70.00"],
-                },
-            ]
+            # Simulate Log section as CSV text (already extracted)
+            log_section_csv = """Data,Odo (mi),Fuel (litres),Full,Price (optional),mpg (optional),latitude (optional),longitude (optional),City (optional),Notes (optional),Missed,TankNumber,FuelType,VolumePrice,StationID (optional),ExcludeDistance,UniqueId,TankCalc
+2024-03-10 16:01,212477.0,46.301,1,67.09,21.8,51.16514,-2.99017,Somerset - Sun all Service Station,,0,1,-1,1.449,496456,0.0,218,0.0
+2024-03-11 10:30,212523.5,40.0,1,58.00,28.5,51.5,-0.1,BP Station,Highway fill,0,1,110,1.450,496457,0.0,219,0.0
+"""
 
-            fuel_records = client._parse_csv(csv_data)  # type: ignore
+            fuel_records = client._parse_csv(log_section_csv)  # type: ignore
 
             self.assertEqual(len(fuel_records), 2)
             self.assertEqual(fuel_records[0].odometer, 212477.0)
@@ -187,6 +110,11 @@ class TestFuelioClient(unittest.TestCase):
                 fuel_records[0].station, "Somerset - Sun all Service Station"
             )
             self.assertEqual(fuel_records[1].odometer, 212523.5)
+            self.assertEqual(fuel_records[1].fuel_consumed, 40.0)
+            self.assertEqual(fuel_records[1].notes, "Highway fill")
+            self.assertEqual(fuel_records[1].odometer, 212523.5)
+            self.assertEqual(fuel_records[1].fuel_consumed, 40.0)
+            self.assertEqual(fuel_records[1].notes, "Highway fill")
             self.assertEqual(fuel_records[1].fuel_consumed, 40.0)
             self.assertEqual(fuel_records[1].notes, "Highway fill")
 

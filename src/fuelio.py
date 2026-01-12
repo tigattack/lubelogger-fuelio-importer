@@ -1,13 +1,12 @@
 """Fuelio backup data processing and CSV parsing"""
 
 import csv
+import io
 import logging
-import tempfile
 import zipfile
 from dataclasses import dataclass
 from datetime import datetime
-from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from exceptions import FuelioDataError, GDriveError
 from gdrive import GDrive
@@ -21,23 +20,24 @@ if TYPE_CHECKING:
 # See my rant in the README for details.
 
 
-# CSV field indices for Fuelio fuel record data
-# Based on Fuelio export format: Data, Odo, Fuel, Full, Price, mpg, lat, lon, City, Notes, Missed, TankNumber, FuelType, etc.
-class FuelioFields:
-    """Field indices for Fuelio CSV export"""
+# Fuelio CSV column name mapping
+class FuelioColumns:
+    """Column names in Fuelio CSV export"""
 
-    ODOMETER = 0
-    FUEL_CONSUMED = 1
-    IS_FULL = 2
-    COST = 3
-    MPG = 4  # Not used
-    LATITUDE = 5
-    LONGITUDE = 6
-    STATION = 7
-    NOTES = 8
-    MISSED = 9
-    TANK_NUMBER = 10  # Not used
-    FUEL_TYPE = 11
+    DATETIME = "Data"
+    ODOMETER = "Odo (mi)"
+    FUEL_CONSUMED = "Fuel (litres)"
+    IS_FULL = "Full"
+    COST = "Price (optional)"
+    LATITUDE = "latitude (optional)"
+    LONGITUDE = "longitude (optional)"
+    STATION = "City (optional)"
+    NOTES = "Notes (optional)"
+    MISSED = "Missed"
+    FUEL_TYPE = "FuelType"
+
+    # Required columns that must be present
+    REQUIRED = {DATETIME, ODOMETER, FUEL_CONSUMED, IS_FULL}
 
 
 # Fuelio fuel type ID to name mapping
@@ -83,27 +83,56 @@ class FuelioFuelRecord:
     fuel_type: int
 
     @classmethod
-    def from_csv_row(cls, row: dict[str, Any]) -> "FuelioFuelRecord":
+    def from_csv_row(cls, row: dict[str, str]) -> "FuelioFuelRecord":
         """Create FuelioFuelRecord from CSV row"""
-        # The datetime is in the ## Vehicle column
-        fuel_record_datetime = datetime.strptime(row["## Vehicle"], "%Y-%m-%d %H:%M")
 
-        # All other fields are in unnamed columns accessed via None key
-        # Type checker doesn't understand csv.DictReader's None key pattern
-        fields = row[None]  # type: ignore[index]
+        # Field extraction helpers
+        def get_str(key: str) -> str:
+            """Get string, default to empty (optional fields)"""
+            return row.get(key, "")
+
+        def get_float(key: str, required: bool = True) -> float:
+            """Get float value, optionally required"""
+            value = row.get(key, "")
+            if not value:
+                if required:
+                    raise ValueError(f"Required field '{key}' is missing or empty")
+                return 0.0
+            return float(value)
+
+        def get_int(key: str) -> int:
+            """Get int, default to 0"""
+            value = row.get(key, "")
+            return int(value) if value else 0
+
+        def get_bool(key: str) -> bool:
+            """Get bool from int field"""
+            return get_int(key) == 1
+
+        # Parse datetime defensively
+        datetime_str = row.get(FuelioColumns.DATETIME, "")
+        if not datetime_str:
+            raise ValueError("Required field 'Data' (datetime) is missing or empty")
+
+        try:
+            record_datetime = datetime.strptime(datetime_str, "%Y-%m-%d %H:%M")
+        except ValueError as e:
+            raise ValueError(f"Invalid datetime format '{datetime_str}': {e}") from e
 
         return cls(
-            datetime=fuel_record_datetime,
-            odometer=float(fields[FuelioFields.ODOMETER]),
-            fuel_consumed=float(fields[FuelioFields.FUEL_CONSUMED]),
-            cost=float(fields[FuelioFields.COST]),
-            is_full=int(fields[FuelioFields.IS_FULL]) == 1,
-            missed=int(fields[FuelioFields.MISSED]) == 1,
-            latitude=fields[FuelioFields.LATITUDE],
-            longitude=fields[FuelioFields.LONGITUDE],
-            station=fields[FuelioFields.STATION].strip(),
-            notes=fields[FuelioFields.NOTES],
-            fuel_type=int(fields[FuelioFields.FUEL_TYPE]),
+            datetime=record_datetime,
+            odometer=get_float(FuelioColumns.ODOMETER),
+            fuel_consumed=get_float(FuelioColumns.FUEL_CONSUMED),
+            cost=get_float(FuelioColumns.COST, required=False),
+            is_full=get_bool(FuelioColumns.IS_FULL),
+            missed=get_bool(FuelioColumns.MISSED),
+            latitude=get_str(FuelioColumns.LATITUDE),
+            longitude=get_str(FuelioColumns.LONGITUDE),
+            station=get_str(FuelioColumns.STATION).strip(),
+            notes=get_str(FuelioColumns.NOTES),
+            fuel_type=get_int(FuelioColumns.FUEL_TYPE)
+            if row.get(FuelioColumns.FUEL_TYPE)
+            else -1,
         )
 
 
@@ -139,6 +168,8 @@ class FuelioClient:
                 f"No backup found for vehicle {vehicle_id} (looking for {zip_filename})"
             )
 
+        # Sort by modified time to get the latest backup
+        backups.sort(key=lambda b: b.get("modifiedTime", ""), reverse=True)
         backup = backups[0]
         backup_name = backup.get("name", "unknown")
         backup_id = backup.get("id", "unknown")
@@ -158,79 +189,80 @@ class FuelioClient:
         self.logger.info("Loaded %d fuel records from Fuelio backup", len(fuel_records))
         return fuel_records
 
-    def _extract_csv_from_backup(
-        self, backup: File, csv_filename: str
-    ) -> list[dict[str, Any]]:
-        """Extract CSV data from ZIP backup"""
+    def _extract_csv_from_backup(self, backup: File, csv_filename: str) -> str:
+        """Extract CSV data from ZIP backup and return Log section as text"""
         backup_name = backup.get("name", "unknown")
         backup_id = backup.get("id", "unknown")
 
-        with tempfile.TemporaryDirectory() as tempdir:
-            # Download ZIP file
-            try:
-                zip_content = self.drive.download_file(backup_id)
-            except GDriveError as e:
-                raise FuelioDataError(
-                    f"Failed to download backup file {backup_name} (ID: {backup_id}): {e}"
-                ) from e
+        # Download ZIP file
+        try:
+            zip_content = self.drive.download_file(backup_id)
+        except GDriveError as e:
+            raise FuelioDataError(
+                f"Failed to download backup file {backup_name} (ID: {backup_id}): {e}"
+            ) from e
 
-            # Extract ZIP
-            extract_path = Path(tempdir) / "fuelio"
-            extract_path.mkdir(parents=True, exist_ok=True)
+        # Read CSV directly from ZIP
+        try:
+            with zipfile.ZipFile(zip_content, "r") as zip_ref:
+                if csv_filename not in zip_ref.namelist():
+                    raise FuelioDataError(
+                        f"CSV file not found in backup: {csv_filename}"
+                    )
 
-            try:
-                with zipfile.ZipFile(zip_content, "r") as zip_ref:
-                    zip_ref.extractall(extract_path)
-            except zipfile.BadZipFile as e:
-                raise FuelioDataError(f"Invalid ZIP file: {backup_name}") from e
+                csv_text = zip_ref.read(csv_filename).decode("utf-8")
+                return self._extract_log_section(csv_text)
+        except zipfile.BadZipFile as e:
+            raise FuelioDataError(f"Invalid ZIP file: {backup_name}") from e
 
-            # Read CSV
-            csv_path = extract_path / csv_filename
-            if not csv_path.exists():
-                raise FuelioDataError(f"CSV file not found in backup: {csv_filename}")
+    def _extract_log_section(self, csv_text: str) -> str:
+        """Extract the ## Log section from Fuelio CSV text"""
+        lines = csv_text.splitlines(keepends=True)
 
-            # Read all data into memory before tempdir is cleaned up
-            with open(csv_path, "r", encoding="utf-8") as csv_file:
-                reader = csv.DictReader(csv_file)
-                return list(reader)
+        # Find Log section boundaries (strip whitespace and quotes for matching)
+        try:
+            log_start = next(
+                i
+                for i, line in enumerate(lines)
+                if line.lstrip().strip('"').startswith("## Log")
+            )
+        except StopIteration:
+            raise FuelioDataError("No Log section found in Fuelio CSV data")
 
-    def _parse_csv(self, csv_data: list[dict[str, Any]]) -> list[FuelioFuelRecord]:
-        """Parse Fuelio CSV data and extract fuel records
+        # Find next section or end of file
+        log_end = len(lines)
+        for i in range(log_start + 1, len(lines)):
+            if lines[i].lstrip().strip('"').startswith("##"):
+                log_end = i
+                break
 
-        Fuelio CSV contains multiple sections (## Vehicle, ## Log, ## CostCategories, etc.).
-        Fuel records are in the ## Log section.
-        """
+        # Return Log section (skip the marker line itself, keep header + data)
+        return "".join(lines[log_start + 1 : log_end])
+
+    def _parse_csv(self, log_section_text: str) -> list[FuelioFuelRecord]:
+        """Parse Fuelio 'Log' section CSV data and extract fuel records"""
+        reader = csv.DictReader(io.StringIO(log_section_text))
+
+        if not reader.fieldnames:
+            raise FuelioDataError("CSV Log section has no header row")
+
+        # Validate that required columns are present
+        missing_cols = FuelioColumns.REQUIRED - set(reader.fieldnames)
+        if missing_cols:
+            raise FuelioDataError(
+                f"Missing required columns in CSV: {', '.join(sorted(missing_cols))}. "
+                f"Found columns: {', '.join(reader.fieldnames)}"
+            )
+
         fuel_records: list[FuelioFuelRecord] = []
-        in_log_section = False
-
-        for row in csv_data:
-            first_col = row.get("## Vehicle", "")
-
-            # Track which section we're in
-            if first_col == "## Log":
-                in_log_section = True
-                continue
-            elif first_col.startswith("##"):
-                in_log_section = False
-                continue
-
-            # Skip rows outside the Log section
-            if not in_log_section:
-                continue
-
-            # Skip header row (contains "Data" in first column)
-            if first_col == "Data":
-                continue
-
-            # Try to parse fuel record
+        for row in reader:
             try:
                 fuel_records.append(FuelioFuelRecord.from_csv_row(row))
             except (ValueError, KeyError, TypeError) as e:
                 self.logger.debug(
                     "Skipping row with invalid data: %s (error: %s)",
-                    first_col,
+                    row.get(FuelioColumns.DATETIME, "unknown"),
                     e,
                 )
-                continue
 
         return fuel_records

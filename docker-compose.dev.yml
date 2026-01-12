@@ -1,7 +1,7 @@
 ---
-
+name: lubelogger-fuelio-importer-dev
 services:
-  lubelogger-fuelio-importer:
+  app:
     build:
       context: .
       dockerfile: Dockerfile

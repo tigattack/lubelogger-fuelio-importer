@@ -7,7 +7,24 @@ Python script to import fuel records from [Fuelio](https://fuel.io/)'s Google Dr
 - **LubeLogger**: v1.5.7 or later
 - Python 3.12+ if using standalone method
 
-# Usage
+## Usage
+
+```
+❯ python3 main.py -h
+usage: main.py [-h] [--dry-run] [--log-level {debug,info,warning,error,critical}]
+               [config_dir]
+
+Import Fuelio fuel records into LubeLogger
+
+positional arguments:
+  config_dir            Config directory
+
+options:
+  -h, --help            show this help message and exit
+  --dry-run             Perform a dry run without making any changes
+  --log-level {debug,info,warning,error,critical}
+                        Log level to use (overrides config file)
+```
 
 **Defaults:**
 
@@ -17,9 +34,10 @@ Python script to import fuel records from [Fuelio](https://fuel.io/)'s Google Dr
 
 ### Standalone
 
-```sh
-python3 main.py [-h|--help] [--dry-run] [--log-level {debug,info,warning,error,critical}] [config_dir]
-```
+- Clone repository
+- [Optional] Checkout tag
+- Change to `src` directory
+- Run `python3 main.py <args>`
 
 ### Docker
 
@@ -33,10 +51,29 @@ docker run --rm -v ./config:/app/config ghcr.io/tigattack/lubelogger-fuelio-impo
 docker compose up [-d]
 ```
 
+### Example
+
+```
+❯ python3 main.py
+2026-01-12 01:21:36,585 - INFO - Starting Fuelio to LubeLogger sync
+2026-01-12 01:21:36,590 - INFO - SYNCING LUBELOGGER VEHICLE 2 ← FUELIO VEHICLE 5
+2026-01-12 01:21:36,679 - INFO - Found LubeLogger vehicle: 1997 BMW Z3 (R123ABC)
+2026-01-12 01:21:37,889 - INFO - Loaded 10 fuel records from Fuelio backup
+2026-01-12 01:21:37,904 - INFO - Found 10 fuel records in LubeLogger
+2026-01-12 01:21:37,904 - INFO - Nothing to add, LubeLogger fuel logs are up to date!
+2026-01-12 01:21:37,905 - INFO - SYNCING LUBELOGGER VEHICLE 4 ← FUELIO VEHICLE 6
+2026-01-12 01:21:37,951 - INFO - Found LubeLogger vehicle: 2008 BMW 335i (AB12CDE)
+2026-01-12 01:21:39,079 - INFO - Loaded 54 fuel records from Fuelio backup
+2026-01-12 01:21:39,097 - INFO - Found 53 fuel records in LubeLogger
+2026-01-12 01:21:39,100 - INFO - Adding fuel record from 2026-01-04
+2026-01-12 01:21:39,159 - INFO - Added 1 fuel record(s)
+2026-01-12 01:21:39,178 - INFO - Sync complete
+```
+
 > [!TIP]
 > You will need to download [docker-compose.yml](docker-compose.yml) to current directory before running.
 
-# Getting Started
+## Getting Started
 
 First, a couple of prerequisites:
 
@@ -53,25 +90,25 @@ Now you can complete the configuration for the importer:
 6. Set your credentials filename and the relevant `auth_type` in the config.
 7. Run the importer per the [Usage](#usage) section above.
 
-## Retrieve your Fuelio vehicle ID
+### Retrieve your Fuelio vehicle ID
 
 Fuelio vehicle IDs are chronological, i.e. the first vehicle you add to Fuelio is ID 1, the second is ID 2, and so on.
 
 If you're unsure, download and extract the backup ZIP of each vehicle and inspect the CSV inside.
 
-## Retrieve your Lubelogger vehicle ID
+### Retrieve your LubeLogger vehicle ID
 
 1. Open LubeLogger in a browser.
 2. Navigate to the vehicle in question.
 3. The vehicle ID will be in the URL like so: `https://lubelogger.domain.tld/Vehicle/Index?vehicleId=<vehicle ID here>`
 
-## Retrieve your Google Drive Folder ID
+### Retrieve your Google Drive Folder ID
 
 1. Open Google Drive in a browser.
 2. Navigate to the folder in which Fulio stores its backups.
 3. The folder ID will be in the URL like so: `https://drive.google.com/drive/folders/<folder ID here>`
 
-## Generate Google Drive API credentials
+### Generate Google Drive API credentials
 
 1. Go to APIs Console and make your own project.
 2. Search for "Google Drive API", select the entry, and click "Enable".
@@ -91,7 +128,9 @@ If you're unsure, download and extract the backup ZIP of each vehicle and inspec
 12. Navigate to the folder in which Fulio stores its backups.
 13. Share the folder with the service account using email address you copied in step 8. The "Viewer" role is all it needs.
 
-# Fuelio CSV Rant
+---
+
+## Fuelio CSV Rant
 
 I'd like to rant about the CSV files in Fuelio's backups.
 

@@ -73,6 +73,9 @@ docker run --rm -v ./config:/app/config ghcr.io/tigattack/lubelogger-fuelio-impo
 docker compose up [-d]
 ```
 
+> [!TIP]
+> You will need to download [docker-compose.yml](docker-compose.yml) to current directory before running.
+
 ### Example
 
 ```
@@ -91,9 +94,6 @@ docker compose up [-d]
 2026-01-12 01:21:39,159 - INFO - Added 1 fuel record(s)
 2026-01-12 01:21:39,178 - INFO - Sync complete
 ```
-
-> [!TIP]
-> You will need to download [docker-compose.yml](docker-compose.yml) to current directory before running.
 
 ## Getting Started
 

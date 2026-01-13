@@ -1,27 +1,14 @@
 """Business logic for syncing Fuelio data to LubeLogger"""
 
 import logging
-import sys
 from pprint import pformat
 from textwrap import dedent
 from typing import Any
 
-from pygments import highlight  # type: ignore[import-untyped]
-from pygments.formatters import Terminal256Formatter
-from pygments.lexers import PythonLexer  # type: ignore[import-untyped]
-
+from exceptions import FuelioDataError, LubeLoggerAPIError
 from fuelio import FuelioClient, FuelioFuelRecord
 from lubelogger import LubeLogger
-from exceptions import FuelioDataError, LubeLoggerAPIError
 from models import FUEL_RECORD_EXCLUDE_KEYS, LubeLoggerFuelRecord
-
-
-def pprint_colour(obj: Any) -> None:
-    """Pretty-print object with syntax highlighting if terminal supports it"""
-    if sys.stdout.isatty():
-        print(highlight(pformat(obj), PythonLexer(), Terminal256Formatter()), end="")  # type: ignore[arg-type]
-    else:
-        print(pformat(obj))
 
 
 class SyncService:
@@ -105,10 +92,8 @@ class SyncService:
 
         # Print full objects if debug logging enabled
         if self.logger.level <= logging.DEBUG:
-            self.logger.debug("Existing fill:")
-            pprint_colour(existing_fill.to_dict())
-            self.logger.debug("Incoming fill:")
-            pprint_colour(new_fill.to_dict())
+            self.logger.debug("Existing fill:\n%s", pformat(existing_fill.to_dict()))
+            self.logger.debug("Incoming fill:\n%s", pformat(new_fill.to_dict()))
 
         # Log each differing field (excluding ignored keys)
         for key, new_value in new_fill.to_dict().items():
@@ -291,10 +276,8 @@ class SyncService:
 
         # Log differences at debug level
         if self.logger.level <= logging.DEBUG:
-            self.logger.debug("Existing fill:")
-            pprint_colour(existing_fill.to_dict())
-            self.logger.debug("New fill from Fuelio:")
-            pprint_colour(new_fill.to_dict())
+            self.logger.debug("Existing fill:\n%s", pformat(existing_fill.to_dict()))
+            self.logger.debug("New fill from Fuelio:\n%s", pformat(new_fill.to_dict()))
 
         if not self.dry_run:
             try:

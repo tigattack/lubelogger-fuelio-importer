@@ -27,7 +27,7 @@ class TestSyncService(unittest.TestCase):
         self.mock_fuelio = Mock()
         self.mock_lubelogger = Mock()
         self.service = SyncService(
-            self.mock_fuelio, self.mock_lubelogger, dry_run=False
+            self.mock_fuelio, self.mock_lubelogger, dry_run=False, clobber=False
         )
 
     def test_init(self):
@@ -35,6 +35,7 @@ class TestSyncService(unittest.TestCase):
         self.assertEqual(self.service.fuelio, self.mock_fuelio)
         self.assertEqual(self.service.lubelogger, self.mock_lubelogger)
         self.assertFalse(self.service.dry_run)
+        self.assertFalse(self.service.clobber)
 
     def test_convert_to_lubelogger(self):
         """Test converting Fuelio fuel record to LubeLogger format"""
@@ -86,8 +87,8 @@ class TestSyncService(unittest.TestCase):
         self.assertIn("date", result)
         self.assertIn("odometer", result)
 
-    def test_find_duplicate_found(self):
-        """Test finding duplicate fuel record"""
+    def test_find_conflict_found(self):
+        """Test finding conflicting fuel record"""
         new_fill = LubeLoggerFuelRecord(
             date="2024-01-15",
             odometer=12345,
@@ -108,14 +109,15 @@ class TestSyncService(unittest.TestCase):
             )
         ]
 
-        result = self.service.find_duplicate(new_fill, existing_fills)
+        result = self.service.find_conflict(new_fill, existing_fills)
 
         self.assertIsNotNone(result)
-        self.assertEqual(result["date"], "2024-01-15")
-        self.assertEqual(result["odometer"], 12345)
+        self.assertIsInstance(result, LubeLoggerFuelRecord)
+        self.assertEqual(result.date, "2024-01-15")
+        self.assertEqual(result.odometer, 12345)
 
-    def test_find_duplicate_not_found(self):
-        """Test finding duplicate when none exists"""
+    def test_find_conflict_not_found(self):
+        """Test finding conflict when none exists"""
         new_fill = LubeLoggerFuelRecord(
             date="2024-01-15",
             odometer=12345,
@@ -136,7 +138,7 @@ class TestSyncService(unittest.TestCase):
             )
         ]
 
-        result = self.service.find_duplicate(new_fill, existing_fills)
+        result = self.service.find_conflict(new_fill, existing_fills)
 
         self.assertIsNone(result)
 
@@ -211,7 +213,9 @@ class TestSyncService(unittest.TestCase):
 
     def test_sync_vehicle_dry_run(self):
         """Test vehicle sync in dry run mode"""
-        service = SyncService(self.mock_fuelio, self.mock_lubelogger, dry_run=True)
+        service = SyncService(
+            self.mock_fuelio, self.mock_lubelogger, dry_run=True, clobber=False
+        )
 
         # Mock data
         mock_vehicle = Mock()
@@ -347,6 +351,178 @@ class TestSyncService(unittest.TestCase):
         # Verify recalculate was NOT called (no fuel records added)
         self.mock_lubelogger.get_odometer_records.assert_not_called()
         self.mock_lubelogger.recalculate_odometer_records.assert_not_called()
+
+    def test_clobber_enabled(self):
+        """Test that conflicts are overridden when clobber is True"""
+        service = SyncService(
+            self.mock_fuelio, self.mock_lubelogger, dry_run=False, clobber=True
+        )
+
+        # Mock vehicle info
+        mock_vehicle = Mock()
+        mock_vehicle.year = 2020
+        mock_vehicle.make = "Toyota"
+        mock_vehicle.model = "Camry"
+        mock_vehicle.license_plate = "ABC123"
+        self.mock_lubelogger.get_vehicle_info.return_value = mock_vehicle
+
+        # Mock Fuelio data
+        fuelio_fill = FuelioFuelRecord(
+            datetime=datetime(2024, 1, 15, 14, 30),
+            odometer=12345.0,
+            fuel_consumed=45.5,
+            cost=75.50,
+            is_full=True,
+            missed=False,
+            latitude="51.5",
+            longitude="-0.1",
+            station="Shell",
+            notes="New notes",
+            fuel_type=110,
+        )
+        self.mock_fuelio.fetch_fuel_records.return_value = [fuelio_fill]
+        self.mock_fuelio.get_fuel_type_name.return_value = "Petrol Regular"
+
+        # Mock existing LubeLogger fuel record with same date/odometer but different data (conflict)
+        existing_fill = LubeLoggerFuelRecord(
+            id=100,
+            date="2024-01-15",
+            odometer=12345,
+            fuel_consumed=40.0,  # Different amount
+            cost=70.00,  # Different cost
+            is_fill_to_full=False,  # Different flag
+            missed_fuel_up=False,
+            notes="Old notes",
+        )
+        self.mock_lubelogger.get_fuel_records.return_value = [existing_fill]
+
+        # Mock odometer records (no negative distances)
+        self.mock_lubelogger.get_odometer_records.return_value = []
+
+        # Run sync
+        service.sync_vehicle(
+            fuelio_vehicle_id=1, lubelogger_vehicle_id=2, drive_folder_id="folder123"
+        )
+
+        # Verify update was called, not add
+        self.mock_lubelogger.update_fuel_record.assert_called_once()
+        self.mock_lubelogger.add_fuel_record.assert_not_called()
+
+        # Verify the updated record has the ID from the existing record
+        updated_record = self.mock_lubelogger.update_fuel_record.call_args[0][0]
+        self.assertEqual(updated_record.id, 100)
+        self.assertEqual(updated_record.fuel_consumed, 45.5)
+        self.assertEqual(updated_record.cost, 75.50)
+        self.assertTrue(updated_record.is_fill_to_full)
+
+    def test_clobber_disabled(self):
+        """Test that conflicts are NOT overridden when clobber is False"""
+        # Service with clobber disabled (default)
+        service = SyncService(
+            self.mock_fuelio, self.mock_lubelogger, dry_run=False, clobber=False
+        )
+
+        # Mock vehicle info
+        mock_vehicle = Mock()
+        mock_vehicle.year = 2020
+        mock_vehicle.make = "Toyota"
+        mock_vehicle.model = "Camry"
+        mock_vehicle.license_plate = "ABC123"
+        self.mock_lubelogger.get_vehicle_info.return_value = mock_vehicle
+
+        # Mock Fuelio data
+        fuelio_fill = FuelioFuelRecord(
+            datetime=datetime(2024, 1, 15, 14, 30),
+            odometer=12345.0,
+            fuel_consumed=45.5,
+            cost=75.50,
+            is_full=True,
+            missed=False,
+            latitude="51.5",
+            longitude="-0.1",
+            station="Shell",
+            notes="New notes",
+            fuel_type=110,
+        )
+        self.mock_fuelio.fetch_fuel_records.return_value = [fuelio_fill]
+        self.mock_fuelio.get_fuel_type_name.return_value = "Petrol Regular"
+
+        # Mock existing LubeLogger fuel record with same date/odometer (conflict)
+        existing_fill = LubeLoggerFuelRecord(
+            id=100,
+            date="2024-01-15",
+            odometer=12345,
+            fuel_consumed=40.0,  # Different amount
+            cost=70.00,  # Different cost
+            is_fill_to_full=False,
+            missed_fuel_up=False,
+            notes="Old notes",
+        )
+        self.mock_lubelogger.get_fuel_records.return_value = [existing_fill]
+
+        # Run sync
+        service.sync_vehicle(
+            fuelio_vehicle_id=1, lubelogger_vehicle_id=2, drive_folder_id="folder123"
+        )
+
+        # Verify neither update nor add was called (conflict was logged but not overridden)
+        self.mock_lubelogger.update_fuel_record.assert_not_called()
+        self.mock_lubelogger.add_fuel_record.assert_not_called()
+        # Verify odometer recalc was not called since nothing was modified
+        self.mock_lubelogger.get_odometer_records.assert_not_called()
+
+    def test_clobber_dry_run(self):
+        """Test that clobber works correctly in dry run mode"""
+        service = SyncService(
+            self.mock_fuelio, self.mock_lubelogger, dry_run=True, clobber=True
+        )
+
+        # Mock vehicle info
+        mock_vehicle = Mock()
+        mock_vehicle.year = 2020
+        mock_vehicle.make = "Toyota"
+        mock_vehicle.model = "Camry"
+        mock_vehicle.license_plate = "ABC123"
+        self.mock_lubelogger.get_vehicle_info.return_value = mock_vehicle
+
+        # Mock Fuelio data
+        fuelio_fill = FuelioFuelRecord(
+            datetime=datetime(2024, 1, 15, 14, 30),
+            odometer=12345.0,
+            fuel_consumed=45.5,
+            cost=75.50,
+            is_full=True,
+            missed=False,
+            latitude="51.5",
+            longitude="-0.1",
+            station="Shell",
+            notes="New notes",
+            fuel_type=110,
+        )
+        self.mock_fuelio.fetch_fuel_records.return_value = [fuelio_fill]
+        self.mock_fuelio.get_fuel_type_name.return_value = "Petrol Regular"
+
+        # Mock existing LubeLogger fuel record
+        existing_fill = LubeLoggerFuelRecord(
+            id=100,
+            date="2024-01-15",
+            odometer=12345,
+            fuel_consumed=40.0,
+            cost=70.00,
+            is_fill_to_full=False,
+            missed_fuel_up=False,
+            notes="Old notes",
+        )
+        self.mock_lubelogger.get_fuel_records.return_value = [existing_fill]
+
+        # Run sync
+        service.sync_vehicle(
+            fuelio_vehicle_id=1, lubelogger_vehicle_id=2, drive_folder_id="folder123"
+        )
+
+        # Verify update was NOT called in dry run
+        self.mock_lubelogger.update_fuel_record.assert_not_called()
+        self.mock_lubelogger.add_fuel_record.assert_not_called()
 
 
 if __name__ == "__main__":

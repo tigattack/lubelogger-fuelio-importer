@@ -39,6 +39,11 @@ def parse_args() -> argparse.Namespace:
         help="Perform a dry run without making any changes",
     )
     parser.add_argument(
+        "--clobber",
+        action="store_true",
+        help="Override LubeLogger fuel records with Fuelio data when conflicts are found (based on matching date and mileage)",
+    )
+    parser.add_argument(
         "--log-level",
         default="",
         choices=["debug", "info", "warning", "error", "critical"],

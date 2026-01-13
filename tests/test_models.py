@@ -260,7 +260,7 @@ class TestLubeLoggerVehicleInfo(unittest.TestCase):
 
         self.assertEqual(minimal_vehicle.image_location, "")
         self.assertEqual(minimal_vehicle.map_location, "")
-        self.assertEqual(minimal_vehicle.purchase_date, "")
+        self.assertIsNone(minimal_vehicle.purchase_date)
         self.assertIsNone(minimal_vehicle.sold_date)
         self.assertEqual(minimal_vehicle.purchase_price, 0.0)
         self.assertEqual(minimal_vehicle.sold_price, 0.0)

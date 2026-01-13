@@ -140,6 +140,36 @@ class LubeLogger:
                 f"Request failed while adding fuel record to vehicle {vehicle_id}: {exc}"
             ) from exc
 
+    def update_fuel_record(self, fuel_record: LubeLoggerFuelRecord) -> None:
+        """Update an existing fuel record in LubeLogger"""
+        if fuel_record.id is None:
+            raise ValueError("Cannot update fuel record without an ID")
+
+        response = None
+        try:
+            data = fuel_record.to_api_dict()
+            data["id"] = fuel_record.id
+
+            response = self.session.put(
+                f"{self.url}/api/vehicle/gasrecords/update",
+                data=data,
+                timeout=self.timeout,
+            )
+            response.raise_for_status()
+        except requests.exceptions.ReadTimeout as exc:
+            raise LubeLoggerAPIError(
+                f"API timed out while updating fuel record {fuel_record.id}"
+            ) from exc
+        except requests.exceptions.HTTPError as exc:
+            status = response.status_code if response else "unknown"
+            raise LubeLoggerAPIError(
+                f"HTTP {status} error updating fuel record {fuel_record.id}: {exc}"
+            ) from exc
+        except requests.exceptions.RequestException as exc:
+            raise LubeLoggerAPIError(
+                f"Request failed while updating fuel record {fuel_record.id}: {exc}"
+            ) from exc
+
     def get_vehicle_info(self, vehicle_id: int) -> LubeLoggerVehicleInfo:
         """Get vehicle info from LubeLogger"""
         params = {"vehicleId": vehicle_id}

@@ -32,11 +32,13 @@ class SyncService:
         fuelio_client: FuelioClient,
         lubelogger_client: LubeLogger,
         dry_run: bool = False,
+        clobber: bool = False,
     ):
         """Initialise sync service"""
         self.fuelio = fuelio_client
         self.lubelogger = lubelogger_client
         self.dry_run = dry_run
+        self.clobber = clobber
         self.logger = logging.getLogger(__name__)
 
     def convert_to_lubelogger(
@@ -78,47 +80,48 @@ class SyncService:
             if k not in FUEL_RECORD_EXCLUDE_KEYS
         }
 
-    def find_duplicate(
+    def find_conflict(
         self, new_fill: LubeLoggerFuelRecord, existing_fills: list[LubeLoggerFuelRecord]
-    ) -> dict[str, Any] | None:
-        """Find duplicate fuel record by date and odometer"""
+    ) -> LubeLoggerFuelRecord | None:
+        """Find conflicting fuel record by date and odometer"""
         return next(
             (
-                fill.to_dict()
+                fill
                 for fill in existing_fills
                 if fill.date == new_fill.date and fill.odometer == new_fill.odometer
             ),
             None,
         )
 
-    def log_duplicate_differences(
-        self, new_fill: LubeLoggerFuelRecord, existing_fill: dict[str, Any]
+    def log_conflict(
+        self, new_fill: LubeLoggerFuelRecord, existing_fill: LubeLoggerFuelRecord
     ) -> None:
         """Log differences between new and existing fuel record"""
         self.logger.warning(
             "Found existing fuel record on %s with different attributes. "
-            "This is likely a duplicate and the relevant attributes will need to be manually patched.",
+            "This is likely a conflict and the relevant attributes will need to be manually patched.",
             new_fill.date,
         )
 
         # Print full objects if debug logging enabled
         if self.logger.level <= logging.DEBUG:
             self.logger.debug("Existing fill:")
-            pprint_colour(existing_fill)
+            pprint_colour(existing_fill.to_dict())
             self.logger.debug("Incoming fill:")
             pprint_colour(new_fill.to_dict())
 
         # Log each differing field (excluding ignored keys)
         for key, new_value in new_fill.to_dict().items():
+            existing_dict = existing_fill.to_dict()
             if (
                 key not in FUEL_RECORD_EXCLUDE_KEYS
-                and key in existing_fill
-                and new_value != existing_fill[key]
+                and key in existing_dict
+                and new_value != existing_dict[key]
             ):
                 self.logger.warning(
                     'The current value of attribute "%s":\n%s',
                     key,
-                    repr(existing_fill[key]),
+                    repr(existing_dict[key]),
                 )
                 self.logger.warning(
                     'The incoming value of attribute "%s":\n%s', key, repr(new_value)
@@ -188,12 +191,14 @@ class SyncService:
         )
 
         # Process fuel records
-        added_fuel_records = self._process_fuel_records(
+        added_fuel_records, updated_fuel_records = self._process_fuel_records(
             fuelio_fills, lubelogger_fills, lubelogger_vehicle_id
         )
 
-        # Recalculate odometer records if any fuel records were added
-        if len(added_fuel_records) > 0 and not self.dry_run:
+        # Recalculate odometer records if any fuel records were added or updated
+        if (
+            len(added_fuel_records) > 0 or len(updated_fuel_records) > 0
+        ) and not self.dry_run:
             self._recalculate_odometer_records(lubelogger_vehicle_id)
 
     def _process_fuel_records(
@@ -201,13 +206,14 @@ class SyncService:
         fuelio_fills: list[FuelioFuelRecord],
         lubelogger_fills: list[LubeLoggerFuelRecord],
         vehicle_id: int,
-    ) -> list[LubeLoggerFuelRecord]:
+    ) -> tuple[list[LubeLoggerFuelRecord], list[LubeLoggerFuelRecord]]:
         """Process and sync fuel records
 
         Returns:
-            list[LubeLoggerFuelRecord]: List of added fuel records
+            tuple: (added_records, updated_records)
         """
         added_fuel_records: list[LubeLoggerFuelRecord] = []
+        updated_fuel_records: list[LubeLoggerFuelRecord] = []
 
         # Process in reverse order (oldest first)
         for fuelio_fill in reversed(fuelio_fills):
@@ -223,10 +229,17 @@ class SyncService:
                 # Already exists, skip
                 continue
 
-            # Check for duplicate with different attributes
-            duplicate = self.find_duplicate(new_fill, lubelogger_fills)
-            if duplicate:
-                self.log_duplicate_differences(new_fill, duplicate)
+            # Check for conflict with different attributes
+            conflict = self.find_conflict(new_fill, lubelogger_fills)
+            if conflict:
+                if self.clobber:
+                    # Override the conflict with Fuelio data
+                    self._update_conflicting_fuel_record(
+                        new_fill, conflict, updated_fuel_records
+                    )
+                else:
+                    # Just log the differences
+                    self.log_conflict(new_fill, conflict)
                 continue
 
             # Add new fuel record
@@ -245,13 +258,68 @@ class SyncService:
                 )
                 added_fuel_records.append(new_fill)
 
-        if not added_fuel_records:
-            self.logger.info("Nothing to add, LubeLogger fuel logs are up to date!")
+        if not added_fuel_records and not updated_fuel_records:
+            self.logger.info(
+                "Nothing to add or update, LubeLogger fuel logs are up to date!"
+            )
         else:
-            action = "Would add" if self.dry_run else "Added"
-            self.logger.info("%s %d fuel record(s)", action, len(added_fuel_records))
+            if added_fuel_records:
+                action = "Would add" if self.dry_run else "Added"
+                self.logger.info(
+                    "%s %d fuel record(s)", action, len(added_fuel_records)
+                )
+            if updated_fuel_records:
+                action = "Would update" if self.dry_run else "Updated"
+                self.logger.info(
+                    "%s %d fuel record(s)", action, len(updated_fuel_records)
+                )
 
-        return added_fuel_records
+        return added_fuel_records, updated_fuel_records
+
+    def _update_conflicting_fuel_record(
+        self,
+        new_fill: LubeLoggerFuelRecord,
+        existing_fill: LubeLoggerFuelRecord,
+        updated_fuel_records: list[LubeLoggerFuelRecord],
+    ) -> None:
+        """Handle updating conflicting fuel record with Fuelio data"""
+        self.logger.info(
+            "Updating fuel record from %s (ID: %d) with Fuelio data",
+            existing_fill.date,
+            existing_fill.id,
+        )
+
+        # Log differences at debug level
+        if self.logger.level <= logging.DEBUG:
+            self.logger.debug("Existing fill:")
+            pprint_colour(existing_fill.to_dict())
+            self.logger.debug("New fill from Fuelio:")
+            pprint_colour(new_fill.to_dict())
+
+        if not self.dry_run:
+            try:
+                # Create a copy of the record to avoid mutating the original Fuelio-derived record
+                updated_fill = LubeLoggerFuelRecord(**new_fill.model_dump())
+                updated_fill.id = existing_fill.id
+                self.lubelogger.update_fuel_record(updated_fill)
+                updated_fuel_records.append(updated_fill)
+                self.logger.info(
+                    "Successfully updated fuel record from %s", new_fill.date
+                )
+            except LubeLoggerAPIError as e:
+                self.logger.error(
+                    "Failed to update fuel record from %s: %s", new_fill.date, e
+                )
+        else:
+            self.logger.info(
+                "Dry run: Would update fuel record from %s (ID: %d)",
+                existing_fill.date,
+                existing_fill.id,
+            )
+            # Create a copy for the updated records list
+            updated_fill = LubeLoggerFuelRecord(**new_fill.model_dump())
+            updated_fill.id = existing_fill.id
+            updated_fuel_records.append(updated_fill)
 
     def _recalculate_odometer_records(self, vehicle_id: int) -> None:
         """Recalculate odometer records if negative distances are detected"""

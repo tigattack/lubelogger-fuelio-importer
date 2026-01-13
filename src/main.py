@@ -38,7 +38,9 @@ def main():
     )
 
     # Initialise sync service
-    sync_service = SyncService(fuelio_client, lubelogger_client, args.dry_run)
+    sync_service = SyncService(
+        fuelio_client, lubelogger_client, args.dry_run, args.clobber
+    )
 
     # Sync each configured vehicle
     for vehicle in config.sync_vehicles:

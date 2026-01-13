@@ -11,7 +11,7 @@ Python script to import fuel records from [Fuelio](https://fuel.io/)'s Google Dr
 
 ```
 ❯ python3 main.py -h
-usage: main.py [-h] [--dry-run] [--log-level {debug,info,warning,error,critical}]
+usage: main.py [-h] [--dry-run] [--clobber] [--log-level {debug,info,warning,error,critical}]
                [config_dir]
 
 Import Fuelio fuel records into LubeLogger
@@ -22,6 +22,7 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   --dry-run             Perform a dry run without making any changes
+  --clobber             Override LubeLogger fuel records with Fuelio data when conflicts are found (based on matching date and mileage)
   --log-level {debug,info,warning,error,critical}
                         Log level to use (overrides config file)
 ```
@@ -31,6 +32,27 @@ options:
 * The log level set in the execution args (`--log-level`) takes presedence over config.yml's `log_level`. If neither are set, it will default to `INFO`.
 * If `config_dir` is unspecified, the default is to look for a directory named `config` in the script's current working direcory.  
   It can also be set by defining the `CONFIG_DIR` environment variable.
+
+### Clobber Mode
+
+By default, when the importer finds a fuel record in LubeLogger with the same date and mileage as a record from Fuelio but with different attributes (e.g., different cost, fuel amount, or notes), it will log a warning and skip the record.
+
+The `--clobber` flag enables Fuelio to be used as the source of truth: when a conflict is detected with different attributes, the LubeLogger record will be updated with the data from Fuelio.
+
+**Use cases:**
+- You've manually edited fuel records in LubeLogger and want to restore them from Fuelio backups
+- You've made corrections in Fuelio and want to sync those changes to LubeLogger
+- You want to ensure LubeLogger always matches your Fuelio data
+
+**Example:**
+```sh
+python3 main.py --clobber
+```
+
+When used with `--dry-run`, the importer will show what would be updated without making any changes:
+```sh
+python3 main.py --dry-run --clobber
+```
 
 ### Standalone
 

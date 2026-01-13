@@ -119,7 +119,7 @@ class LubeLoggerVehicleInfo(BaseModel):
     license_plate: str
     image_location: str = ""
     map_location: str = ""
-    purchase_date: str = ""
+    purchase_date: str | None = None
     sold_date: str | None = None
     purchase_price: float = 0.0
     sold_price: float = 0.0

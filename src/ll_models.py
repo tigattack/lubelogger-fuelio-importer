@@ -9,7 +9,7 @@ from util import from_camel_case, to_camel_case
 # Keys to exclude when sending fuel record data to the API or comparing fuel records
 FUEL_RECORD_EXCLUDE_KEYS = {"id", "fuel_economy", "extra_fields", "files"}
 
-DEFAULT_VECHICLE_IDENTIFIER = "LicensePlate"
+DEFAULT_VEHICLE_IDENTIFIER = "LicensePlate"
 
 
 class LubeLoggerAddFuelRecordResponse(BaseModel):
@@ -133,7 +133,7 @@ class LubeLoggerVehicleInfo(BaseModel):
     odometer_multiplier: int = 1
     odometer_difference: int = 0
     dashboard_metrics: list[Any] = Field(default_factory=list)
-    vehicle_identifier: str = DEFAULT_VECHICLE_IDENTIFIER
+    vehicle_identifier: str = DEFAULT_VEHICLE_IDENTIFIER
 
     def to_dict(self) -> dict[str, Any]:
         """Return vehicle info as dict"""

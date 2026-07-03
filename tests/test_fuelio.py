@@ -10,7 +10,7 @@ from unittest.mock import Mock, patch
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from exceptions import FuelioDataError
-from flio_models import FuelioFuelRecord
+from flio_models import FuelioFuelRecord, FuelioVehicleInfo
 from fuelio import FuelioClient
 
 
@@ -54,6 +54,80 @@ class TestFuelioFuelRecord(unittest.TestCase):
         self.assertEqual(fuel_record.station, "Somerset - Sun all Service Station")
         self.assertEqual(fuel_record.notes, "Test notes")
         self.assertEqual(fuel_record.fuel_type, -1)
+
+
+class TestFuelioVehicleInfo(unittest.TestCase):
+    """Tests for FuelioVehicleInfo dataclass"""
+
+    def test_from_csv_row(self):
+        """Test creating FuelioVehicleInfo from CSV row"""
+        row = {
+            "Name": "Yamaha YBR125",
+            "Description": "",
+            "DistUnit": "1",
+            "FuelUnit": "0",
+            "ConsumptionUnit": "2",
+            "ImportCSVDateFormat": "yyyy-MM-dd",
+            "VIN": "",
+            "Insurance": "",
+            "Plate": "FG12HIJ",
+            "Make": "Yamaha",
+            "Model": "YBR125",
+            "Year": "2013",
+            "TankCount": "1",
+            "Tank1Type": "100",
+            "Tank2Type": "0",
+            "Active": "1",
+            "Tank1Capacity": "12.0",
+            "Tank2Capacity": "0.0",
+            "FuelUnitTank2": "0",
+            "FuelConsumptionTank2": "0",
+            "guid": "a2737dc2-e656-4004-b8ae-9e5ff2a1d542",
+            "lastupdated": "1782556534866",
+        }
+
+        vehicle_info = FuelioVehicleInfo.from_csv_row(row, vehicle_id=7)
+
+        self.assertEqual(vehicle_info.name, "Yamaha YBR125")
+        self.assertEqual(vehicle_info.dist_unit, 1)
+        self.assertEqual(vehicle_info.fuel_unit, 0)
+        self.assertEqual(vehicle_info.consumption_unit, 2)
+        self.assertEqual(vehicle_info.import_csv_date_format, "yyyy-MM-dd")
+        self.assertEqual(vehicle_info.plate, "FG12HIJ")
+        self.assertEqual(vehicle_info.make, "Yamaha")
+        self.assertEqual(vehicle_info.model, "YBR125")
+        self.assertEqual(vehicle_info.year, 2013)
+        self.assertEqual(vehicle_info.tank_count, 1)
+        self.assertEqual(vehicle_info.tank1_type, 100)
+        self.assertEqual(vehicle_info.tank2_type, 0)
+        self.assertTrue(vehicle_info.active)
+        self.assertEqual(vehicle_info.tank1_capacity, 12.0)
+        self.assertEqual(vehicle_info.tank2_capacity, 0.0)
+        self.assertEqual(vehicle_info.fuel_unit_tank2, 0)
+        self.assertEqual(vehicle_info.fuel_consumption_tank2, 0)
+        self.assertEqual(vehicle_info.guid, "a2737dc2-e656-4004-b8ae-9e5ff2a1d542")
+        self.assertEqual(vehicle_info.last_updated, 1782556534866)
+        self.assertEqual(vehicle_info.id, 7)
+
+    def test_from_csv_row_missing_required_name(self):
+        """Test vehicle parsing fails when required fields are missing"""
+        row = {
+            "Name": "",
+            "Plate": "FG12HIJ",
+            "Make": "Yamaha",
+            "Model": "YBR125",
+            "DistUnit": "1",
+            "FuelUnit": "0",
+            "ConsumptionUnit": "2",
+            "Year": "2013",
+            "TankCount": "1",
+            "Tank1Type": "100",
+            "Active": "1",
+            "Tank1Capacity": "12.0",
+        }
+
+        with self.assertRaisesRegex(ValueError, "Required field 'Name'"):
+            FuelioVehicleInfo.from_csv_row(row, vehicle_id=7)
 
 
 class TestFuelioClient(unittest.TestCase):

@@ -6,8 +6,8 @@ import logging
 import zipfile
 from typing import TYPE_CHECKING
 
-from flio_models import FuelioFuelRecord
 from exceptions import FuelioDataError, GDriveError
+from flio_models import FuelioFuelColumns, FuelioFuelRecord
 from gdrive import GDrive
 
 if TYPE_CHECKING:
@@ -17,26 +17,6 @@ if TYPE_CHECKING:
 
 # Fuelio backups implement a fundamentally broken CSV structure. This makes parsing them very frustrating.
 # See my rant in the README for details.
-
-
-# Fuelio CSV column name mapping
-class FuelioColumns:
-    """Column names in Fuelio CSV export"""
-
-    DATETIME = "Data"
-    ODOMETER = "Odo (mi)"
-    FUEL_CONSUMED = "Fuel (litres)"
-    IS_FULL = "Full"
-    COST = "Price (optional)"
-    LATITUDE = "latitude (optional)"
-    LONGITUDE = "longitude (optional)"
-    STATION = "City (optional)"
-    NOTES = "Notes (optional)"
-    MISSED = "Missed"
-    FUEL_TYPE = "FuelType"
-
-    # Required columns that must be present
-    REQUIRED = {DATETIME, ODOMETER, FUEL_CONSUMED, IS_FULL}
 
 
 # Fuelio fuel type ID to name mapping
@@ -176,7 +156,7 @@ class FuelioClient:
             raise FuelioDataError("CSV Log section has no header row")
 
         # Validate that required columns are present
-        missing_cols = FuelioColumns.REQUIRED - set(reader.fieldnames)
+        missing_cols = FuelioFuelColumns.REQUIRED - set(reader.fieldnames)
         if missing_cols:
             raise FuelioDataError(
                 f"Missing required columns in CSV: {', '.join(sorted(missing_cols))}. "
@@ -190,7 +170,7 @@ class FuelioClient:
             except (ValueError, KeyError, TypeError) as e:
                 self.logger.debug(
                     "Skipping row with invalid data: %s (error: %s)",
-                    row.get(FuelioColumns.DATETIME, "unknown"),
+                    row.get(FuelioFuelColumns.DATETIME, "unknown"),
                     e,
                 )
 

@@ -3,7 +3,25 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from fuelio import FuelioColumns
+
+# Fuelio CSV column name mappings
+class FuelioFuelColumns:
+    """Column names in Fuelio CSV Log (fuel) section"""
+
+    DATETIME = "Data"
+    ODOMETER = "Odo (mi)"
+    FUEL_CONSUMED = "Fuel (litres)"
+    IS_FULL = "Full"
+    COST = "Price (optional)"
+    LATITUDE = "latitude (optional)"
+    LONGITUDE = "longitude (optional)"
+    STATION = "City (optional)"
+    NOTES = "Notes (optional)"
+    MISSED = "Missed"
+    FUEL_TYPE = "FuelType"
+
+    # Required columns that must be present
+    REQUIRED = {DATETIME, ODOMETER, FUEL_CONSUMED, IS_FULL}
 
 
 @dataclass
@@ -50,7 +68,7 @@ class FuelioFuelRecord:
             return get_int(key) == 1
 
         # Parse datetime defensively
-        datetime_str = row.get(FuelioColumns.DATETIME, "")
+        datetime_str = row.get(FuelioFuelColumns.DATETIME, "")
         if not datetime_str:
             raise ValueError("Required field 'Data' (datetime) is missing or empty")
 
@@ -61,16 +79,16 @@ class FuelioFuelRecord:
 
         return cls(
             datetime=record_datetime,
-            odometer=get_float(FuelioColumns.ODOMETER),
-            fuel_consumed=get_float(FuelioColumns.FUEL_CONSUMED),
-            cost=get_float(FuelioColumns.COST, required=False),
-            is_full=get_bool(FuelioColumns.IS_FULL),
-            missed=get_bool(FuelioColumns.MISSED),
-            latitude=get_str(FuelioColumns.LATITUDE),
-            longitude=get_str(FuelioColumns.LONGITUDE),
-            station=get_str(FuelioColumns.STATION).strip(),
-            notes=get_str(FuelioColumns.NOTES),
-            fuel_type=get_int(FuelioColumns.FUEL_TYPE)
-            if row.get(FuelioColumns.FUEL_TYPE)
+            odometer=get_float(FuelioFuelColumns.ODOMETER),
+            fuel_consumed=get_float(FuelioFuelColumns.FUEL_CONSUMED),
+            cost=get_float(FuelioFuelColumns.COST, required=False),
+            is_full=get_bool(FuelioFuelColumns.IS_FULL),
+            missed=get_bool(FuelioFuelColumns.MISSED),
+            latitude=get_str(FuelioFuelColumns.LATITUDE),
+            longitude=get_str(FuelioFuelColumns.LONGITUDE),
+            station=get_str(FuelioFuelColumns.STATION).strip(),
+            notes=get_str(FuelioFuelColumns.NOTES),
+            fuel_type=get_int(FuelioFuelColumns.FUEL_TYPE)
+            if row.get(FuelioFuelColumns.FUEL_TYPE)
             else -1,
         )

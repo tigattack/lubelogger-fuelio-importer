@@ -9,7 +9,7 @@ Python script to import fuel records from [Fuelio](https://fuel.io/)'s Google Dr
 
 ## Usage
 
-```
+```sh
 ❯ python3 main.py -h
 usage: main.py [-h] [--dry-run] [--clobber] [--log-level {debug,info,warning,error,critical}]
                [config_dir]
@@ -78,7 +78,7 @@ docker compose up [-d]
 
 ### Example
 
-```
+```sh
 ❯ python3 main.py
 2026-01-12 01:21:36,585 - INFO - Starting Fuelio to LubeLogger sync
 2026-01-12 01:21:36,590 - INFO - SYNCING LUBELOGGER VEHICLE 2 ← FUELIO VEHICLE 5
@@ -116,9 +116,36 @@ Now you can complete the configuration for the importer:
 
 Fuelio vehicle IDs are chronological, i.e. the first vehicle you add to Fuelio is ID 1, the second is ID 2, and so on.
 
-If you're unsure, download and extract the backup ZIP of each vehicle and inspect the CSV inside.
+You can list your Fuelio vehicles with the `--list-fuelio-vehicles` option:
+
+```sh
+❯ python3 main.py --list-fuelio-vehicles
+2026-07-03 23:01:30,903 - INFO - Loaded 7 vehicles from Fuelio backup
+Fuelio Vehicle: Yamaha YBR125, ID: 7
+Fuelio Vehicle: BMW 335i, ID: 6
+Fuelio Vehicle: BMW Z3, ID: 5
+Fuelio Vehicle: Audi A4, ID: 4
+Fuelio Vehicle: Volkswagen Bora, ID: 3
+Fuelio Vehicle: Volkswagen Golf, ID: 2
+Fuelio Vehicle: Renault Clio, ID: 1
+```
+
+Alternatively, download and extract the backup ZIP of each vehicle and inspect the CSV inside.
 
 ### Retrieve your LubeLogger vehicle ID
+
+You can list your fuelio vehicles with the `--list-lubelogger-vehicles` option:
+
+```sh
+❯ python3 main.py --list-lubelogger-vehicles
+LubeLogger Vehicle: Audi A4, ID: 1
+LubeLogger Vehicle: BMW Z3, ID: 2
+LubeLogger Vehicle: BMW 335i, ID: 4
+LubeLogger Vehicle: Volvo Test, ID: 5
+LubeLogger Vehicle: Yamaha YBR125, ID: 6
+```
+
+Alternatively, you can browse to the vehicle in LubeLogger and extract the ID from the URL:
 
 1. Open LubeLogger in a browser.
 2. Navigate to the vehicle in question.
@@ -170,4 +197,4 @@ What Fuelio have implemented in these files is a fundamentally broken CSV struct
 
 As a result of all this, the parser is frustrating to work on, and feels convoluted and janky.
 
-See [src/fuelio.py](src/fuelio.py) for implementation.
+See [src/fuelio.py](src/fuelio.py) and [src/flio_models.py](src/flio_models.py) for implementation.

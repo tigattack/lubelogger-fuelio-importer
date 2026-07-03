@@ -6,9 +6,10 @@ from textwrap import dedent
 from typing import Any
 
 from exceptions import FuelioDataError, LubeLoggerAPIError
-from fuelio import FuelioClient, FuelioFuelRecord
+from flio_models import FuelioFuelRecord
+from fuelio import FuelioClient
+from ll_models import FUEL_RECORD_EXCLUDE_KEYS, LubeLoggerFuelRecord
 from lubelogger import LubeLogger
-from models import FUEL_RECORD_EXCLUDE_KEYS, LubeLoggerFuelRecord
 
 
 class SyncService:

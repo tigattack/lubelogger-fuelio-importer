@@ -71,3 +71,22 @@ class GDrive:
             return file_content
         except HttpError as error:
             raise GDriveError(f"Failed to download file {file_id}: {error}") from error
+
+    def get_folder_contents(self, folder_id: str) -> list[File]:
+        """List all files in a Google Drive folder"""
+        try:
+            results = (
+                self.service.files()
+                .list(
+                    q=f"'{folder_id}' in parents and trashed=false",
+                    pageSize=1000,
+                    fields="nextPageToken, files(id, name, mimeType, size, modifiedTime, parents)",
+                )
+                .execute()
+            )
+
+            return results.get("files", [])
+        except HttpError as error:
+            raise GDriveError(
+                f"Failed to list files in folder {folder_id}: {error}"
+            ) from error

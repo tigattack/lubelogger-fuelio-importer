@@ -9,8 +9,8 @@ from unittest.mock import Mock
 # Add src directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from fuelio import FuelioFuelRecord
-from models import (
+from flio_models import FuelioFuelRecord
+from ll_models import (
     LubeLoggerAddFuelRecordResponse,
     LubeLoggerFuelRecord,
     LubeLoggerOdometerRecord,
@@ -113,8 +113,8 @@ class TestSyncService(unittest.TestCase):
 
         self.assertIsNotNone(result)
         self.assertIsInstance(result, LubeLoggerFuelRecord)
-        self.assertEqual(result.date, "2024-01-15")
-        self.assertEqual(result.odometer, 12345)
+        self.assertEqual(result.date, "2024-01-15")  # pyright: ignore[reportOptionalMemberAccess]
+        self.assertEqual(result.odometer, 12345)  # pyright: ignore[reportOptionalMemberAccess]
 
     def test_find_conflict_not_found(self):
         """Test finding conflict when none exists"""

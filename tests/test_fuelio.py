@@ -10,7 +10,8 @@ from unittest.mock import Mock, patch
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from exceptions import FuelioDataError
-from fuelio import FuelioClient, FuelioFuelRecord
+from flio_models import FuelioFuelRecord
+from fuelio import FuelioClient
 
 
 class TestFuelioFuelRecord(unittest.TestCase):

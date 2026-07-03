@@ -1,4 +1,4 @@
-"""Data models"""
+"""LubeLogger data models"""
 
 from typing import Any
 

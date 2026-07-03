@@ -9,7 +9,7 @@ from unittest.mock import Mock
 # Add src directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from fuelio import FuelioFuelRecord
+from flio_models import FuelioFuelRecord
 from ll_models import (
     LubeLoggerAddFuelRecordResponse,
     LubeLoggerFuelRecord,

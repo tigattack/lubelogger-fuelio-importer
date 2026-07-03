@@ -7,7 +7,7 @@ import zipfile
 from typing import TYPE_CHECKING
 
 from exceptions import FuelioDataError, GDriveError
-from flio_models import FuelioFuelColumns, FuelioFuelRecord
+from flio_models import FuelioFuelColumns, FuelioFuelRecord, FuelioVehicleInfo
 from gdrive import GDrive
 
 if TYPE_CHECKING:
@@ -56,6 +56,40 @@ class FuelioClient:
     def get_fuel_type_name(self, fuel_type_id: int) -> str:
         """Get fuel type name from ID"""
         return FUEL_TYPES.get(fuel_type_id, FUEL_TYPES[-1])
+
+    def fetch_vehicles(self, folder_id: str):
+        try:
+            files = self.drive.get_folder_contents(folder_id)
+        except GDriveError as e:
+            raise FuelioDataError(
+                f"Failed to fetch vehicles from folder {folder_id}: {e}"
+            ) from e
+
+        if not files:
+            raise FuelioDataError(f"No files found in folder {folder_id}")
+
+        self.logger.debug("Found %d files in folder %s", len(files), folder_id)
+
+        vehicles: list[FuelioVehicleInfo] = []
+        for file in files:
+            self.logger.debug(
+                "Processing file: %s (ID: %s)", file.get("name"), file.get("id")
+            )
+
+            csv_filename = file.get("name", "").replace(".zip", "")
+            # Extract vehicle ID from filename
+            vehicle_id = int(csv_filename.split("-")[1])
+
+            csv_content = self._extract_csv_from_backup(file, csv_filename)
+            csv_vehicle_section = self._get_fuelio_csv_section(csv_content, "Vehicle")
+
+            vehicles.extend(
+                self._parse_csv_vehicle_info(csv_vehicle_section, vehicle_id)
+            )
+
+        self.logger.info("Loaded %d vehicles from Fuelio backup", len(vehicles))
+
+        return vehicles
 
     def fetch_fuel_records(
         self, folder_id: str, vehicle_id: int
@@ -149,7 +183,7 @@ class FuelioClient:
         return "".join(lines[section_start + 1 : section_end])
 
     def _parse_csv_fuel_log(self, log_section_text: str) -> list[FuelioFuelRecord]:
-        """Parse Fuelio 'Log' section CSV data and extract fuel records"""
+        """Parse Fuelio CSV 'Log' section and extract fuel records"""
         reader = csv.DictReader(io.StringIO(log_section_text))
 
         if not reader.fieldnames:
@@ -175,3 +209,25 @@ class FuelioClient:
                 )
 
         return fuel_records
+
+    def _parse_csv_vehicle_info(
+        self, vehicle_section_text: str, vehicle_id: int
+    ) -> list[FuelioVehicleInfo]:
+        """Parse Fuelio CSV 'Vehicle' section and extract vehicle info"""
+        reader = csv.DictReader(io.StringIO(vehicle_section_text))
+
+        if not reader.fieldnames:
+            raise FuelioDataError("CSV Vehicle section has no header row")
+
+        vehicles: list[FuelioVehicleInfo] = []
+        for row in reader:
+            try:
+                vehicles.append(FuelioVehicleInfo.from_csv_row(row, vehicle_id))
+            except (ValueError, KeyError, TypeError) as e:
+                self.logger.debug(
+                    "Skipping vehicle row with invalid data: %s (error: %s)",
+                    row.get("Name", "unknown"),
+                    e,
+                )
+
+        return vehicles

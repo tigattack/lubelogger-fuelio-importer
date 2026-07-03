@@ -181,16 +181,17 @@ class FuelioClient:
         )
 
         # Download and extract
-        csv_data = self._extract_csv_from_backup(backup, csv_filename)
+        csv_content = self._extract_csv_from_backup(backup, csv_filename)
+        csv_fuel_log = self._extract_log_section(csv_content)
 
         # Parse CSV
-        fuel_records = self._parse_csv(csv_data)
+        fuel_records = self._parse_csv(csv_fuel_log)
 
         self.logger.info("Loaded %d fuel records from Fuelio backup", len(fuel_records))
         return fuel_records
 
     def _extract_csv_from_backup(self, backup: File, csv_filename: str) -> str:
-        """Extract CSV data from ZIP backup and return Log section as text"""
+        """Extract file content from ZIP backup"""
         backup_name = backup.get("name", "unknown")
         backup_id = backup.get("id", "unknown")
 
@@ -210,8 +211,7 @@ class FuelioClient:
                         f"CSV file not found in backup: {csv_filename}"
                     )
 
-                csv_text = zip_ref.read(csv_filename).decode("utf-8")
-                return self._extract_log_section(csv_text)
+                return zip_ref.read(csv_filename).decode("utf-8")
         except zipfile.BadZipFile as e:
             raise FuelioDataError(f"Invalid ZIP file: {backup_name}") from e
 

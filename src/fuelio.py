@@ -185,7 +185,7 @@ class FuelioClient:
         csv_fuel_log = self._extract_log_section(csv_content)
 
         # Parse CSV
-        fuel_records = self._parse_csv(csv_fuel_log)
+        fuel_records = self._parse_csv_fuel_log(csv_fuel_log)
 
         self.logger.info("Loaded %d fuel records from Fuelio backup", len(fuel_records))
         return fuel_records
@@ -239,7 +239,7 @@ class FuelioClient:
         # Return Log section (skip the marker line itself, keep header + data)
         return "".join(lines[log_start + 1 : log_end])
 
-    def _parse_csv(self, log_section_text: str) -> list[FuelioFuelRecord]:
+    def _parse_csv_fuel_log(self, log_section_text: str) -> list[FuelioFuelRecord]:
         """Parse Fuelio 'Log' section CSV data and extract fuel records"""
         reader = csv.DictReader(io.StringIO(log_section_text))
 

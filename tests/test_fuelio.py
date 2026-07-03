@@ -101,7 +101,7 @@ class TestFuelioClient(unittest.TestCase):
 2024-03-11 10:30,212523.5,40.0,1,58.00,28.5,51.5,-0.1,BP Station,Highway fill,0,1,110,1.450,496457,0.0,219,0.0
 """
 
-            fuel_records = client._parse_csv(log_section_csv)  # type: ignore
+            fuel_records = client._parse_csv_fuel_log(log_section_csv)  # type: ignore
 
             self.assertEqual(len(fuel_records), 2)
             self.assertEqual(fuel_records[0].odometer, 212477.0)

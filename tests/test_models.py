@@ -8,7 +8,7 @@ import os
 # Add src directory to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from models import (
+from ll_models import (
     FUEL_RECORD_EXCLUDE_KEYS,
     LubeLoggerFuelRecord,
     LubeLoggerVehicleInfo,

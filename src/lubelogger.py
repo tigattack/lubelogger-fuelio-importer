@@ -6,7 +6,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 from exceptions import LubeLoggerAPIError
-from models import (
+from ll_models import (
     LubeLoggerAddFuelRecordResponse,
     LubeLoggerFuelRecord,
     LubeLoggerOdometerRecord,

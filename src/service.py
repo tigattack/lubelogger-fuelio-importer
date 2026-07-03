@@ -8,7 +8,7 @@ from typing import Any
 from exceptions import FuelioDataError, LubeLoggerAPIError
 from fuelio import FuelioClient, FuelioFuelRecord
 from lubelogger import LubeLogger
-from models import FUEL_RECORD_EXCLUDE_KEYS, LubeLoggerFuelRecord
+from ll_models import FUEL_RECORD_EXCLUDE_KEYS, LubeLoggerFuelRecord
 
 
 class SyncService:

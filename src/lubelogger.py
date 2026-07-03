@@ -29,6 +29,28 @@ class LubeLogger:
         self.session.headers.update({"culture-invariant": "true"})
         self.timeout = 10
 
+    def get_vehicles(self) -> list[LubeLoggerVehicleInfo]:
+        """Get all vehicles from LubeLogger"""
+        response = None
+        try:
+            response = self.session.get(
+                f"{self.url}/api/vehicles", timeout=self.timeout
+            )
+            response.raise_for_status()
+        except requests.exceptions.ReadTimeout as exc:
+            raise LubeLoggerAPIError("API timed out while fetching vehicles") from exc
+        except requests.exceptions.HTTPError as exc:
+            status = response.status_code if response else "unknown"
+            raise LubeLoggerAPIError(
+                f"HTTP {status} error fetching vehicles: {exc}"
+            ) from exc
+        except requests.exceptions.RequestException as exc:
+            raise LubeLoggerAPIError(
+                f"Request failed while fetching vehicles: {exc}"
+            ) from exc
+
+        return [LubeLoggerVehicleInfo.from_api_response(v) for v in response.json()]
+
     def get_fuel_records(self, vehicle_id: int) -> list[LubeLoggerFuelRecord]:
         """Get all fuel record logs from LubeLogger"""
         params = {"vehicleId": vehicle_id}

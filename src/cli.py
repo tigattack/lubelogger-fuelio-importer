@@ -44,6 +44,16 @@ def parse_args() -> argparse.Namespace:
         help="Override LubeLogger fuel records with Fuelio data when conflicts are found (based on matching date and mileage)",
     )
     parser.add_argument(
+        "--list-fuelio-vehicles",
+        action="store_true",
+        help="List Fuelio vehicles and exit",
+    )
+    parser.add_argument(
+        "--list-lubelogger-vehicles",
+        action="store_true",
+        help="List LubeLogger vehicles and exit",
+    )
+    parser.add_argument(
         "--log-level",
         default="",
         choices=["debug", "info", "warning", "error", "critical"],

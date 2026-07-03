@@ -27,7 +27,6 @@ def main():
     setup_logging(log_level)
 
     logger = logging.getLogger(__name__)
-    logger.info("Starting Fuelio to LubeLogger sync")
 
     # Initialise clients
     fuelio_client = FuelioClient(config.credentials_file_path)
@@ -37,30 +36,47 @@ def main():
         config.lubelogger_password,
     )
 
-    # Initialise sync service
-    sync_service = SyncService(
-        fuelio_client, lubelogger_client, args.dry_run, args.clobber
-    )
+    if args.list_fuelio_vehicles:
+        vehicles = fuelio_client.fetch_vehicles(config.drive_folder_id)
+        for vehicle in vehicles:
+            print(f"Fuelio Vehicle: {vehicle.name}, ID: {vehicle.id}")
+        sys.exit(0)
 
-    # Sync each configured vehicle
-    for vehicle in config.sync_vehicles:
-        try:
-            sync_service.sync_vehicle(
-                fuelio_vehicle_id=vehicle.fuelio_id,
-                lubelogger_vehicle_id=vehicle.lubelogger_id,
-                drive_folder_id=config.drive_folder_id,
+    if args.list_lubelogger_vehicles:
+        vehicles = lubelogger_client.get_vehicles()
+        for vehicle in vehicles:
+            print(
+                f"LubeLogger Vehicle: {vehicle.make} {vehicle.model}, ID: {vehicle.id}"
             )
-        except Exception as e:
-            logger.error(
-                "Failed to sync vehicle (Fuelio ID: %d, LubeLogger ID: %d): %s",
-                vehicle.fuelio_id,
-                vehicle.lubelogger_id,
-                e,
-                exc_info=True,
-            )
-            continue
+        sys.exit(0)
 
-    logger.info("Sync complete")
+    else:
+        logger.info("Starting Fuelio to LubeLogger sync")
+
+        # Initialise sync service
+        sync_service = SyncService(
+            fuelio_client, lubelogger_client, args.dry_run, args.clobber
+        )
+
+        # Sync each configured vehicle
+        for vehicle in config.sync_vehicles:
+            try:
+                sync_service.sync_vehicle(
+                    fuelio_vehicle_id=vehicle.fuelio_id,
+                    lubelogger_vehicle_id=vehicle.lubelogger_id,
+                    drive_folder_id=config.drive_folder_id,
+                )
+            except Exception as e:
+                logger.error(
+                    "Failed to sync vehicle (Fuelio ID: %d, LubeLogger ID: %d): %s",
+                    vehicle.fuelio_id,
+                    vehicle.lubelogger_id,
+                    e,
+                    exc_info=True,
+                )
+                continue
+
+        logger.info("Sync complete")
 
 
 if __name__ == "__main__":

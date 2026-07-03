@@ -182,7 +182,7 @@ class FuelioClient:
 
         # Download and extract
         csv_content = self._extract_csv_from_backup(backup, csv_filename)
-        csv_fuel_log = self._extract_log_section(csv_content)
+        csv_fuel_log = self._get_fuelio_csv_section(csv_content, "Log")
 
         # Parse CSV
         fuel_records = self._parse_csv_fuel_log(csv_fuel_log)
@@ -215,29 +215,29 @@ class FuelioClient:
         except zipfile.BadZipFile as e:
             raise FuelioDataError(f"Invalid ZIP file: {backup_name}") from e
 
-    def _extract_log_section(self, csv_text: str) -> str:
-        """Extract the ## Log section from Fuelio CSV text"""
+    def _get_fuelio_csv_section(self, csv_text: str, section_name: str) -> str:
+        """Extract the specified section from Fuelio CSV text"""
         lines = csv_text.splitlines(keepends=True)
 
-        # Find Log section boundaries (strip whitespace and quotes for matching)
+        # Find section boundaries (strip whitespace and quotes for matching)
         try:
-            log_start = next(
+            section_start = next(
                 i
                 for i, line in enumerate(lines)
-                if line.lstrip().strip('"').startswith("## Log")
+                if line.lstrip().strip('"').startswith(f"## {section_name}")
             )
         except StopIteration:
-            raise FuelioDataError("No Log section found in Fuelio CSV data")
+            raise FuelioDataError(f"No {section_name} section found in Fuelio CSV data")
 
         # Find next section or end of file
-        log_end = len(lines)
-        for i in range(log_start + 1, len(lines)):
+        section_end = len(lines)
+        for i in range(section_start + 1, len(lines)):
             if lines[i].lstrip().strip('"').startswith("##"):
-                log_end = i
+                section_end = i
                 break
 
-        # Return Log section (skip the marker line itself, keep header + data)
-        return "".join(lines[log_start + 1 : log_end])
+        # Return section (skip the marker line itself, keep header + data)
+        return "".join(lines[section_start + 1 : section_end])
 
     def _parse_csv_fuel_log(self, log_section_text: str) -> list[FuelioFuelRecord]:
         """Parse Fuelio 'Log' section CSV data and extract fuel records"""

@@ -238,16 +238,16 @@ wheels = [
 
 [[package]]
 name = "google-api-python-client-stubs"
-version = "1.37.0"
+version = "1.38.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "google-api-python-client" },
     { name = "types-httplib2" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/86/ed/70af4fec5cb754a1eed06630376974de18c5f43579471b66548d88ad026c/google_api_python_client_stubs-1.37.0.tar.gz", hash = "sha256:be221c68f80b2672d96d2a645d31e63011fa1336f15db183dafbb59811fcb94b", size = 2659759, upload-time = "2026-05-18T18:53:50.78Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f7/b7/e0f48d07fc9d2d1a7dec5df9a5926a0f1da269bd08b4b055ae912e70541c/google_api_python_client_stubs-1.38.0.tar.gz", hash = "sha256:ff5e962800d05482e39e09b4d7266e2a790475783625192823a3aca60a544bd5", size = 2820560, upload-time = "2026-07-05T07:24:52.417Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4e/75/1cafbab4435e81069cd7646d663bcd493b666bafae2fb5b949f8cadc6137/google_api_python_client_stubs-1.37.0-py3-none-any.whl", hash = "sha256:aa102cbf2ef0c8cac6f6ded06fc8d2ada0664e7b6a124d25cfd8e2cc7b2af88c", size = 3654802, upload-time = "2026-05-18T18:53:52.327Z" },
+    { url = "https://files.pythonhosted.org/packages/c1/cc/b7ce0fdf310716767485016c2ea8ee05cbb030e0f76849e4476a9d8451bd/google_api_python_client_stubs-1.38.0-py3-none-any.whl", hash = "sha256:04b2a2b43509da20b7b4cead4b19ed4cffb9055f9f1d9f92e01db0c48e8ab57a", size = 3821050, upload-time = "2026-07-05T07:24:50.619Z" },
 ]
 
 [[package]]

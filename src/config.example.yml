@@ -7,11 +7,16 @@ credentials_file_path: service_secrets.json
 sync_vehicles:
   - fuelio_id: 1
     lubelogger_id: 1
+  - fuelio_id: 2
+    lubelogger_id: 2
 
+# Google Drive folder ID where the Fuelio CSV files are stored
 drive_folder_id: 1oegTkfBXlAbRe5Qk_ju7kAJuCFvNem4k
 
-lubelogger_url: https://lubelogger.domain.tld
+# LubeLogger API configuration
+lubelogger_url: https://lubelogger.domain.tld # IP also works, e.g. http://192.168.1.100:8080
 lubelogger_username: admin
 lubelogger_password: password
 
+# Script logging level (debug, info, warning, error, critical)
 log_level: info

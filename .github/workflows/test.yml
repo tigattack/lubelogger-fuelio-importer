@@ -13,7 +13,7 @@ on:
   workflow_call:
 
 jobs:
-  test:
+  ruff-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -27,8 +27,44 @@ jobs:
 
       - run: uv run --frozen ruff check src/
 
+  ruff-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v8.2.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen --group dev
+
       - run: uv run --frozen ruff format --check src/
 
+  pyright:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v8.2.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen --group dev
+
       - run: uv run --frozen pyright src/
+
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v8.2.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen --group dev
 
       - run: uv run --frozen python -m unittest discover -s tests -p "test_*.py" -v

@@ -5,5 +5,8 @@ import sys
 from cli import launch
 
 if __name__ == "__main__":
-    print("WARNING: main.py is deprecated. Use cli.py instead.", file=sys.stderr)
+    print(
+        "WARNING: main.py is deprecated and will be removed in a future major release. Use cli.py instead.",
+        file=sys.stderr,
+    )
     launch()

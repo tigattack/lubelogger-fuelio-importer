@@ -15,4 +15,4 @@ RUN --mount=from=ghcr.io/astral-sh/uv:latest,source=/uv,target=/bin/uv \
 
 COPY src .
 
-ENTRYPOINT ["python", "main.py"]
+ENTRYPOINT ["python", "cli.py"]

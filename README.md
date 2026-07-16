@@ -10,8 +10,8 @@ Python script to import fuel records from [Fuelio](https://fuel.io/)'s Google Dr
 ## Usage
 
 ```sh
-❯ python3 main.py -h
-usage: main.py [-h] [--dry-run] [--clobber] [--log-level {debug,info,warning,error,critical}]
+❯ python3 cli.py -h
+usage: cli.py [-h] [--dry-run] [--clobber] [--log-level {debug,info,warning,error,critical}]
                [config_dir]
 
 Import Fuelio fuel records into LubeLogger
@@ -46,12 +46,12 @@ The `--clobber` flag enables Fuelio to be used as the source of truth: when a co
 
 **Example:**
 ```sh
-python3 main.py --clobber
+python3 cli.py --clobber
 ```
 
 When used with `--dry-run`, the importer will show what would be updated without making any changes:
 ```sh
-python3 main.py --dry-run --clobber
+python3 cli.py --dry-run --clobber
 ```
 
 ### Standalone
@@ -59,7 +59,7 @@ python3 main.py --dry-run --clobber
 - Clone repository
 - [Optional] Checkout tag
 - Change to `src` directory
-- Run `python3 main.py <args>`
+- Run `python3 cli.py <args>`
 
 ### Docker
 
@@ -79,7 +79,7 @@ docker compose up [-d]
 ### Example
 
 ```sh
-❯ python3 main.py
+❯ python3 cli.py
 2026-01-12 01:21:36,585 - INFO - Starting Fuelio to LubeLogger sync
 2026-01-12 01:21:36,590 - INFO - SYNCING LUBELOGGER VEHICLE 2 ← FUELIO VEHICLE 5
 2026-01-12 01:21:36,679 - INFO - Found LubeLogger vehicle: 1997 BMW Z3 (R123ABC)
@@ -119,7 +119,7 @@ Fuelio vehicle IDs are chronological, i.e. the first vehicle you add to Fuelio i
 You can list your Fuelio vehicles with the `--list-fuelio-vehicles` option:
 
 ```sh
-❯ python3 main.py --list-fuelio-vehicles
+❯ python3 cli.py --list-fuelio-vehicles
 2026-07-03 23:01:30,903 - INFO - Loaded 7 vehicles from Fuelio backup
 Fuelio Vehicle: Yamaha YBR125, ID: 7
 Fuelio Vehicle: BMW 335i, ID: 6
@@ -137,7 +137,7 @@ Alternatively, download and extract the backup ZIP of each vehicle and inspect t
 You can list your fuelio vehicles with the `--list-lubelogger-vehicles` option:
 
 ```sh
-❯ python3 main.py --list-lubelogger-vehicles
+❯ python3 cli.py --list-lubelogger-vehicles
 LubeLogger Vehicle: Audi A4, ID: 1
 LubeLogger Vehicle: BMW Z3, ID: 2
 LubeLogger Vehicle: BMW 335i, ID: 4

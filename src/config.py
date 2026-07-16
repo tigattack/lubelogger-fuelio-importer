@@ -63,6 +63,14 @@ def load_config(config_dir: str) -> Config:
         raise ConfigError(f"Config file is empty: {config_path}")
 
     try:
-        return Config(**data)
+        config = Config(**data)
     except ValidationError as e:
         raise ConfigError(f"Invalid configuration: {e}") from e
+
+    # Relative credentials paths are resolved against the config file's directory
+    credentials_path = Path(config.credentials_file_path)
+    if not credentials_path.is_absolute():
+        credentials_path = config_path.parent / credentials_path
+    config.credentials_file_path = str(credentials_path)
+
+    return config

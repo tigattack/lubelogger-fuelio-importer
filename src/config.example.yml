@@ -1,6 +1,6 @@
 ---
 
-# The path to your credentials JSON file
+# The path to your credentials JSON file relative to this config file.
 credentials_file_path: service_secrets.json
 
 # This list can contain multiple vehicle ID pairs.

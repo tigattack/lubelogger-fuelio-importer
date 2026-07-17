@@ -250,6 +250,12 @@ class SyncService:
         ) and not self.dry_run:
             self._recalculate_odometer_records(lubelogger_vehicle_id)
 
+        self.logger.info(
+            "SYNCED LUBELOGGER VEHICLE %d ← FUELIO VEHICLE %d",
+            lubelogger_vehicle_id,
+            fuelio_vehicle_id,
+        )
+
         return result
 
     def _process_fuel_records(

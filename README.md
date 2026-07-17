@@ -85,14 +85,19 @@ docker compose up [-d]
 2026-01-12 01:21:36,679 - INFO - Found LubeLogger vehicle: 1997 BMW Z3 (R123ABC)
 2026-01-12 01:21:37,889 - INFO - Loaded 10 fuel records from Fuelio backup
 2026-01-12 01:21:37,904 - INFO - Found 10 fuel records in LubeLogger
-2026-01-12 01:21:37,904 - INFO - Nothing to add, LubeLogger fuel logs are up to date!
+2026-01-12 01:21:37,904 - INFO - Nothing to add or update, LubeLogger fuel logs are up to date!
+2026-01-12 01:21:37,905 - INFO - SYNCED LUBELOGGER VEHICLE 2 ← FUELIO VEHICLE 5
 2026-01-12 01:21:37,905 - INFO - SYNCING LUBELOGGER VEHICLE 4 ← FUELIO VEHICLE 6
 2026-01-12 01:21:37,951 - INFO - Found LubeLogger vehicle: 2008 BMW 335i (AB12CDE)
 2026-01-12 01:21:39,079 - INFO - Loaded 54 fuel records from Fuelio backup
 2026-01-12 01:21:39,097 - INFO - Found 53 fuel records in LubeLogger
 2026-01-12 01:21:39,100 - INFO - Adding fuel record from 2026-01-04
 2026-01-12 01:21:39,159 - INFO - Added 1 fuel record(s)
-2026-01-12 01:21:39,178 - INFO - Sync complete
+2026-01-12 01:21:39,178 - INFO - SYNCED LUBELOGGER VEHICLE 4 ← FUELIO VEHICLE 6
+2026-01-12 01:21:39,180 - INFO - Sync complete
+2026-01-12 01:21:39,180 - INFO - Summary:
+2026-01-12 01:21:39,180 - INFO -   1997 BMW Z3 (R123ABC)   │ up to date
+2026-01-12 01:21:39,180 - INFO -   2008 BMW 335i (AB12CDE) │ +1 added
 ```
 
 ## Getting Started

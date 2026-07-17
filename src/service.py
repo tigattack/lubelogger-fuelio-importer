@@ -1,6 +1,7 @@
 """Business logic for syncing Fuelio data to LubeLogger"""
 
 import logging
+from dataclasses import dataclass
 from pprint import pformat
 from textwrap import dedent
 from typing import Any
@@ -10,6 +11,52 @@ from flio_models import FuelioFuelRecord
 from fuelio import FuelioClient
 from ll_models import FUEL_RECORD_EXCLUDE_KEYS, LubeLoggerFuelRecord
 from lubelogger import LubeLogger
+
+
+@dataclass
+class SyncResult:
+    """Outcome of syncing a single vehicle"""
+
+    fuelio_vehicle_id: int
+    lubelogger_vehicle_id: int
+    vehicle_title: str | None = None
+    added: int = 0
+    updated: int = 0
+    conflicts: int = 0
+    error: str | None = None
+    dry_run: bool = False
+
+    @property
+    def label(self) -> str:
+        """Human-readable vehicle identifier for summary output"""
+        if self.vehicle_title:
+            return self.vehicle_title
+        return (
+            f"LubeLogger vehicle {self.lubelogger_vehicle_id} "
+            f"← Fuelio vehicle {self.fuelio_vehicle_id}"
+        )
+
+    @property
+    def summary(self) -> str:
+        """Human-readable summary of what happened for this vehicle"""
+        if self.error:
+            return f"error: {self.error}"
+
+        parts: list[str] = []
+        if self.added:
+            parts.append(f"+{self.added} added")
+        if self.updated:
+            parts.append(f"~{self.updated} updated")
+        if self.conflicts:
+            parts.append(
+                f"{self.conflicts} conflict{'s' if self.conflicts != 1 else ''}"
+            )
+        if not parts:
+            return "up to date"
+        summary = ", ".join(parts)
+        if self.dry_run:
+            summary += " (dry run)"
+        return summary
 
 
 class SyncService:
@@ -115,8 +162,14 @@ class SyncService:
 
     def sync_vehicle(
         self, fuelio_vehicle_id: int, lubelogger_vehicle_id: int, drive_folder_id: str
-    ) -> None:
+    ) -> SyncResult:
         """Sync fuel records for a single vehicle"""
+        result = SyncResult(
+            fuelio_vehicle_id=fuelio_vehicle_id,
+            lubelogger_vehicle_id=lubelogger_vehicle_id,
+            dry_run=self.dry_run,
+        )
+
         self.logger.info(
             "SYNCING LUBELOGGER VEHICLE %d ← FUELIO VEHICLE %d",
             lubelogger_vehicle_id,
@@ -133,7 +186,8 @@ class SyncService:
                 lubelogger_vehicle_id,
                 e,
             )
-            return
+            result.error = "failed to fetch LubeLogger vehicle info"
+            return result
 
         vehicle_title = " ".join(
             [
@@ -143,6 +197,7 @@ class SyncService:
                 f"({vehicle_info.license_plate})",
             ]
         )
+        result.vehicle_title = vehicle_title
         self.logger.info("Found LubeLogger vehicle: %s", vehicle_title)
 
         # Fetch Fuelio data
@@ -153,11 +208,13 @@ class SyncService:
             )
         except FuelioDataError as e:
             self.logger.error("Failed to fetch Fuelio data: %s", e)
-            return
+            result.error = "failed to fetch Fuelio data"
+            return result
 
         if not fuelio_fills:
             self.logger.warning("No fuel records found in Fuelio backup!")
-            return
+            result.error = "no fuel records in Fuelio backup"
+            return result
 
         # Fetch LubeLogger fuel records
         self.logger.debug("Fetching LubeLogger fuel records")
@@ -169,7 +226,8 @@ class SyncService:
                 lubelogger_vehicle_id,
                 e,
             )
-            return
+            result.error = "failed to fetch LubeLogger fuel records"
+            return result
 
         self.logger.info(
             "Found %d fuel records in LubeLogger",
@@ -177,9 +235,14 @@ class SyncService:
         )
 
         # Process fuel records
-        added_fuel_records, updated_fuel_records = self._process_fuel_records(
-            fuelio_fills, lubelogger_fills, lubelogger_vehicle_id
+        added_fuel_records, updated_fuel_records, conflicts = (
+            self._process_fuel_records(
+                fuelio_fills, lubelogger_fills, lubelogger_vehicle_id
+            )
         )
+        result.added = len(added_fuel_records)
+        result.updated = len(updated_fuel_records)
+        result.conflicts = conflicts
 
         # Recalculate odometer records if any fuel records were added or updated
         if (
@@ -187,19 +250,22 @@ class SyncService:
         ) and not self.dry_run:
             self._recalculate_odometer_records(lubelogger_vehicle_id)
 
+        return result
+
     def _process_fuel_records(
         self,
         fuelio_fills: list[FuelioFuelRecord],
         lubelogger_fills: list[LubeLoggerFuelRecord],
         vehicle_id: int,
-    ) -> tuple[list[LubeLoggerFuelRecord], list[LubeLoggerFuelRecord]]:
+    ) -> tuple[list[LubeLoggerFuelRecord], list[LubeLoggerFuelRecord], int]:
         """Process and sync fuel records
 
         Returns:
-            tuple: (added_records, updated_records)
+            tuple: (added_records, updated_records, conflict_count)
         """
         added_fuel_records: list[LubeLoggerFuelRecord] = []
         updated_fuel_records: list[LubeLoggerFuelRecord] = []
+        conflict_count = 0
 
         # Process in reverse order (oldest first)
         for fuelio_fill in reversed(fuelio_fills):
@@ -225,6 +291,7 @@ class SyncService:
                     )
                 else:
                     # Just log the differences
+                    conflict_count += 1
                     self.log_conflict(new_fill, conflict)
                 continue
 
@@ -260,7 +327,7 @@ class SyncService:
                     "%s %d fuel record(s)", action, len(updated_fuel_records)
                 )
 
-        return added_fuel_records, updated_fuel_records
+        return added_fuel_records, updated_fuel_records, conflict_count
 
     def _update_conflicting_fuel_record(
         self,

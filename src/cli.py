@@ -9,7 +9,7 @@ from config import load_config
 from exceptions import ConfigError
 from fuelio import FuelioClient
 from lubelogger import LubeLogger
-from service import SyncService
+from service import SyncResult, SyncService
 
 
 def setup_logging(log_level: str) -> None:
@@ -117,13 +117,15 @@ def launch():
         )
 
         # Sync each configured vehicle
+        results: list[SyncResult] = []
         for vehicle in config.sync_vehicles:
             try:
-                sync_service.sync_vehicle(
+                result = sync_service.sync_vehicle(
                     fuelio_vehicle_id=vehicle.fuelio_id,
                     lubelogger_vehicle_id=vehicle.lubelogger_id,
                     drive_folder_id=config.drive_folder_id,
                 )
+                results.append(result)
             except Exception as e:
                 logger.error(
                     "Failed to sync vehicle (Fuelio ID: %d, LubeLogger ID: %d): %s",
@@ -132,9 +134,23 @@ def launch():
                     e,
                     exc_info=True,
                 )
+                results.append(
+                    SyncResult(
+                        fuelio_vehicle_id=vehicle.fuelio_id,
+                        lubelogger_vehicle_id=vehicle.lubelogger_id,
+                        error="unexpected error",
+                        dry_run=args.dry_run,
+                    )
+                )
                 continue
 
         logger.info("Sync complete")
+
+        if results:
+            width = max(len(r.label) for r in results)
+            logger.info("Summary:")
+            for r in results:
+                logger.info("  %-*s │ %s", width, r.label, r.summary)
 
 
 if __name__ == "__main__":

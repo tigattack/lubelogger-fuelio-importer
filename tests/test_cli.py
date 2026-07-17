@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from cli import launch, parse_args, setup_logging
 from config import Config, VehicleConfig
+from service import SyncResult
 
 
 class TestSetupLogging(unittest.TestCase):
@@ -89,6 +90,12 @@ class TestLaunch(unittest.TestCase):
         """Test launch syncs configured vehicles"""
         mock_load_config.return_value = self.mock_config
         mock_sync_instance = Mock()
+        mock_sync_instance.sync_vehicle.return_value = SyncResult(
+            fuelio_vehicle_id=1,
+            lubelogger_vehicle_id=2,
+            vehicle_title="1997 BMW Z3 (R137LDE)",
+            added=1,
+        )
         mock_sync_service.return_value = mock_sync_instance
 
         launch()

@@ -177,7 +177,7 @@ Alternatively, you can browse to the vehicle in LubeLogger and extract the ID fr
     2. Select "Create new key"
     3. Select "JSON"
     4. Click "Create"
-10. The service account key will be downloaded. Rename the file to "service_secrets.json"  and place it in your working directory.
+10. The service account key will be downloaded. Rename the file to "service_secrets.json" and place it alongside `config.yml` (or elsewhere; path can be configured).
 11. Open Google Drive in a browser.
 12. Navigate to the folder in which Fulio stores its backups.
 13. Share the folder with the service account using email address you copied in step 8. The "Viewer" role is all it needs.

@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.3.1](https://github.com/tigattack/lubelogger-fuelio-importer/compare/v2.3.0...v2.3.1) (2026-07-21)
+
+
+### 🧹 Miscellaneous Chores
+
+* **deps:** update astral-sh/setup-uv action to v9 ([#56](https://github.com/tigattack/lubelogger-fuelio-importer/issues/56)) ([5a82132](https://github.com/tigattack/lubelogger-fuelio-importer/commit/5a821328d48a55e5070c50fef879a7cf8253924d))
+* populate changelog entries for &lt;=2.2.0 ([#54](https://github.com/tigattack/lubelogger-fuelio-importer/issues/54)) ([0e92c0e](https://github.com/tigattack/lubelogger-fuelio-importer/commit/0e92c0e6b926023bb7b5c594ec8183b009a89dba))
+* **release-please:** remove bootstrap sha ([17cb35c](https://github.com/tigattack/lubelogger-fuelio-importer/commit/17cb35c28080cfbc55ff7573f48b7f5837b95a00))
+
 ## [2.3.0](https://github.com/tigattack/lubelogger-fuelio-importer/compare/v2.2.0...v2.3.0) (2026-07-17)
 
 

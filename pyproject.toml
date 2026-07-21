@@ -1,6 +1,6 @@
 [project]
 name = "lubelogger-fuelio-importer"
-version = "2.3.0"
+version = "2.3.1"
 description = "Import fuel records from Fuelio's Google Drive backups to LubeLogger"
 readme = "README.md"
 requires-python = ">=3.12"
